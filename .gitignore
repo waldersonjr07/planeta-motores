@@ -19,6 +19,9 @@ storage/
 # Companion visual do brainstorming
 .superpowers/
 
+# Configuracao local do Claude Code
+.claude/settings.local.json
+
 # Sistema operacional / editor
 Thumbs.db
 .DS_Store
