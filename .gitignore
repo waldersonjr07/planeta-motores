@@ -1,0 +1,25 @@
+# Dependências
+node_modules/
+
+# Build
+.next/
+out/
+dist/
+build/
+
+# Ambiente
+.env
+.env.local
+.env*.local
+
+# Uploads locais (fotos das ordens de serviço)
+uploads/
+storage/
+
+# Companion visual do brainstorming
+.superpowers/
+
+# Sistema operacional / editor
+Thumbs.db
+.DS_Store
+*.log
