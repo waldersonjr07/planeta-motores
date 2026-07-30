@@ -645,7 +645,10 @@ function opcionalComDigitos(
 ) {
   return z
     .string()
-    .transform(apenasDigitos)
+    .optional()
+    // Campo opcional precisa aceitar a chave ausente: formulário que não tem o
+    // campo não envia nada, e reprovar isso quebraria a tela por nada.
+    .transform((v) => apenasDigitos(v ?? ''))
     .refine((v) => v === '' || tamanhosAceitos.includes(v.length), { message: mensagem })
     .transform((v) => (v === '' ? null : v))
 }
@@ -1911,10 +1914,13 @@ import {
   textoObrigatorio,
 } from '@/lib/validacao'
 
+// `.optional()` é obrigatório aqui: campo opcional que o formulário não envia
+// chega como chave ausente, e sem isso o Zod reprova a entrada inteira.
 const opcional = z
   .string()
   .trim()
-  .transform((v) => (v === '' ? null : v))
+  .optional()
+  .transform((v) => (v ? v : null))
 
 export const entradaCliente = z.object({
   nome: textoObrigatorio('Nome'),
@@ -1924,10 +1930,11 @@ export const entradaCliente = z.object({
   email: z
     .string()
     .trim()
-    .refine((v) => v === '' || z.string().email().safeParse(v).success, {
+    .optional()
+    .refine((v) => !v || z.string().email().safeParse(v).success, {
       message: 'Informe um e-mail válido',
     })
-    .transform((v) => (v === '' ? null : v.toLowerCase())),
+    .transform((v) => (v ? v.toLowerCase() : null)),
   logradouro: opcional,
   numero: opcional,
   complemento: opcional,
@@ -1952,9 +1959,23 @@ import type { EntradaCliente } from './esquemas'
 
 const DOCUMENTO_DUPLICADO = 'Já existe cliente cadastrado com esse CPF/CNPJ.'
 
-/** Reconhece a violação do índice único de documento pelo nome do índice. */
+/**
+ * Reconhece a violação do índice único de documento. O Drizzle embrulha o erro
+ * do Postgres, então o código e o nome da restrição só aparecem descendo a
+ * cadeia de `cause` — casar por texto da mensagem não funciona.
+ */
 function eDocumentoDuplicado(erro: unknown): boolean {
-  return String(erro).includes('clientes_documento_unico')
+  const VIOLACAO_DE_UNICIDADE = '23505'
+  for (let atual: unknown = erro; atual; atual = (atual as { cause?: unknown }).cause) {
+    const candidato = atual as { code?: string; constraint_name?: string }
+    if (
+      candidato.code === VIOLACAO_DE_UNICIDADE &&
+      candidato.constraint_name === 'clientes_documento_unico'
+    ) {
+      return true
+    }
+  }
+  return false
 }
 
 export async function criarCliente(
@@ -2312,10 +2333,13 @@ Expected: FAIL — não resolve os módulos de equipamento.
 ```ts
 import { z } from 'zod'
 
+// `.optional()` é obrigatório aqui: campo opcional que o formulário não envia
+// chega como chave ausente, e sem isso o Zod reprova a entrada inteira.
 const opcional = z
   .string()
   .trim()
-  .transform((v) => (v === '' ? null : v))
+  .optional()
+  .transform((v) => (v ? v : null))
 
 export const entradaEquipamento = z.object({
   clienteId: z.string().uuid('Selecione o cliente'),
@@ -4409,10 +4433,13 @@ Expected: FAIL — não resolve os módulos de fornecedor.
 import { z } from 'zod'
 import { telefoneOpcional, textoObrigatorio } from '@/lib/validacao'
 
+// `.optional()` é obrigatório aqui: campo opcional que o formulário não envia
+// chega como chave ausente, e sem isso o Zod reprova a entrada inteira.
 const opcional = z
   .string()
   .trim()
-  .transform((v) => (v === '' ? null : v))
+  .optional()
+  .transform((v) => (v ? v : null))
 
 export const entradaFornecedor = z.object({
   nome: textoObrigatorio('Nome'),
@@ -4734,10 +4761,13 @@ Expected: FAIL — não resolve os módulos de configurações.
 import { z } from 'zod'
 import { documentoOpcional, telefoneOpcional, textoObrigatorio } from '@/lib/validacao'
 
+// `.optional()` é obrigatório aqui: campo opcional que o formulário não envia
+// chega como chave ausente, e sem isso o Zod reprova a entrada inteira.
 const opcional = z
   .string()
   .trim()
-  .transform((v) => (v === '' ? null : v))
+  .optional()
+  .transform((v) => (v ? v : null))
 
 export const entradaConfiguracoes = z.object({
   empresaNome: textoObrigatorio('Nome da empresa'),
@@ -5072,3 +5102,62 @@ Cobre as seções 1 a 6 e 10 (parte de cadastros), 12 e 13 do spec. Fica para os
 
 - **Plano 2** — ordens de serviço (seções 7 e 8 do spec): tabelas `ordens_servico`, `os_itens`, `os_fotos`, `os_historico`, `os_orcamento_versoes`, `os_numeracao`, `estoque_movimentos`, `compras`, `compra_itens`; máquina de transições; baixa e estorno de estoque; telas de OS, estoque e compras. Move o destino do login para `/ordens-servico` e acrescenta as entradas correspondentes ao menu.
 - **Plano 3** — financeiro, documentos e implantação (seções 9, 11 e 14 do spec): `pagamentos`, `despesas`, contas a receber, resultado do mês, os três PDFs, mensagens de WhatsApp, painel, exportação CSV, Docker Compose de produção com Caddy e o procedimento de deploy na VPS.
+
+---
+
+## Registro da execução
+
+Este plano foi executado em 29/07/2026. Resultado: 94 testes de unidade e
+integração, 15 ponta a ponta, `npm run build` sem erro de tipo, 11 rotas.
+
+O código acima já incorpora as correções abaixo. Ficam registradas porque são
+armadilhas que reaparecem nos Planos 2 e 3.
+
+**Dois defeitos de aplicação que os testes pegaram:**
+
+1. **Detecção de documento duplicado.** A versão original casava
+   `String(erro).includes('clientes_documento_unico')`. O Drizzle embrulha o erro
+   do Postgres num `DrizzleQueryError` cuja mensagem é apenas "Failed query:
+   insert into…" — o nome da restrição vive no `cause`. Corrigido para verificar
+   SQLSTATE `23505` mais `constraint_name`, percorrendo a cadeia de causas. Vale
+   para qualquer restrição de unicidade que os planos seguintes adicionarem.
+
+2. **Campo opcional reprovando chave ausente.** Os esquemas usavam
+   `z.string().trim().transform(…)` para campo opcional. Sem `.optional()`, uma
+   chave ausente é erro de validação — e o formulário de equipamento na ficha do
+   cliente não tem campo de observações, então toda inclusão de equipamento
+   falhava com "Confira os campos destacados". Corrigido em `validacao.ts`,
+   `clientes/esquemas.ts`, `equipamentos-esquemas.ts`,
+   `fornecedores-esquemas.ts` e `configuracoes/esquemas.ts`, com teste de
+   regressão em `testes/integracao/equipamentos.test.ts`.
+
+**Três armadilhas de teste ponta a ponta:**
+
+3. `getByRole('alert')` é ambíguo em aplicação Next: o framework injeta
+   `__next-route-announcer__` com esse mesmo papel. Localize pelo texto.
+
+4. Depois de clicar em Entrar, **espere o redirecionamento** (`await
+   expect(page).toHaveURL(…)`) antes de navegar para outra rota. Sair no meio
+   aborta a ação de servidor e o cookie de sessão nunca é gravado — o sintoma é
+   a tela seguinte não encontrar nenhum campo.
+
+5. Validação de servidor só é exercitada se a restrição do navegador for
+   removida antes do envio (`required`, `min`). Caso contrário o formulário nem
+   chega ao servidor e o teste falha esperando uma mensagem que nunca aparece.
+
+**Dois desvios de ambiente, deliberados:**
+
+6. **Esqueleto escrito à mão em vez de `create-next-app`.** O diretório já tinha
+   `.git`, `.gitignore` e `docs/`; o gerador é interativo nesse caso e
+   sobrescreveria o `.gitignore` versionado. Os arquivos de configuração foram
+   escritos direto, com o mesmo resultado.
+
+7. **PostgreSQL 17 portátil em vez de serviço do Windows.** O instalador oficial
+   exige elevação (UAC), que não pode ser respondida de forma automatizada — o
+   `winget install` falha com `0x800704c7`. Foram usados os binários portáteis em
+   `C:\Users\walde\apps\pgsql-17`, com cluster em `dados/`, codificação UTF-8 e
+   ordenação ICU `pt-BR` (com locale `C` a lista de clientes ordenaria "Óleo"
+   depois de "Vela"). Autenticação TCP mudada de `trust` para `scram-sha-256`.
+   **Consequência a lembrar:** o banco não sobe no boot; use
+   `.\scripts\banco-local.ps1 start`. O `docker-compose.dev.yml` segue no
+   repositório para máquinas com Docker.
