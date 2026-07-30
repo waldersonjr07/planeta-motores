@@ -1,0 +1,1 @@
+CREATE DATABASE pm_teste OWNER pm;

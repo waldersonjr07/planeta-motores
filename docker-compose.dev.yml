@@ -1,0 +1,20 @@
+# Postgres local para desenvolvimento em máquinas com Docker.
+# Nesta máquina de desenvolvimento o Postgres 17 está instalado nativamente
+# como serviço do Windows; ver README.md. Os dois caminhos usam a mesma
+# DATABASE_URL, então o código não distingue um do outro.
+services:
+  postgres:
+    image: postgres:16
+    container_name: pm-postgres
+    environment:
+      POSTGRES_USER: pm
+      POSTGRES_PASSWORD: pm
+      POSTGRES_DB: pm
+    ports:
+      - '5432:5432'
+    volumes:
+      - pm-dados:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
+
+volumes:
+  pm-dados:

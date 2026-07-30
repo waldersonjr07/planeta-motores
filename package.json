@@ -1,0 +1,37 @@
+{
+  "name": "planeta-motores",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "teste:e2e": "playwright test",
+    "banco:gerar": "drizzle-kit generate",
+    "banco:aplicar": "drizzle-kit migrate",
+    "usuario": "tsx scripts/criar-usuario.ts"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "drizzle-orm": "^0.44.5",
+    "next": "^15.5.4",
+    "postgres": "^3.4.7",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^22.18.6",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.5",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

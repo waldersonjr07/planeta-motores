@@ -9,8 +9,18 @@ build/
 
 # Ambiente
 .env
+.env.test
 .env.local
 .env*.local
+
+# Next.js
+next-env.d.ts
+.tsbuildinfo
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
 
 # Uploads locais (fotos das ordens de serviço)
 uploads/
