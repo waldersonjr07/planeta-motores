@@ -40,7 +40,7 @@ export async function entrar(
   })
 
   // redirect() encerra a execução lançando internamente; nada depois roda.
-  redirect('/clientes')
+  redirect('/ordens-servico')
 }
 
 export async function sair(): Promise<void> {

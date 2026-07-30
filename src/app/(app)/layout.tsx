@@ -3,10 +3,12 @@ import { Botao } from '@/componentes/botao'
 import { sair } from '@/modulos/auth/acoes'
 import { exigirUsuario } from '@/modulos/auth/guarda'
 
-// Somente rotas que existem. Ordens de serviço, Estoque, Compras, Financeiro e
-// Painel entram nos Planos 2 e 3, junto com suas telas.
+// Somente rotas que existem. Painel e Financeiro entram no Plano 3.
 const MENU = [
+  { href: '/ordens-servico', texto: 'Ordens de serviço' },
   { href: '/clientes', texto: 'Clientes' },
+  { href: '/estoque', texto: 'Estoque' },
+  { href: '/compras', texto: 'Compras' },
   { href: '/catalogo/servicos', texto: 'Catálogo' },
   { href: '/configuracoes', texto: 'Configurações' },
 ]

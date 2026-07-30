@@ -1,26 +1,15 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
-import { clientes, usuarios } from '../../src/db/schema'
-import { gerarHash } from '../../src/modulos/auth/senha'
-import { limparBanco } from '../ajuda/banco'
+import { clientes } from '../../src/db/schema'
+import { prepararSessao } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
-  await limparBanco()
-  await db.insert(usuarios).values({
-    nome: 'Lucilene',
-    email: 'lucilene@planetamotores.com.br',
-    senhaHash: await gerarHash('motor2tempos'),
-  })
+  await prepararSessao(page)
   await db.insert(clientes).values([
     { nome: 'Verde Jardins Paisagismo', cidade: 'São Paulo' },
     { nome: 'Lava-jato Cruz', cidade: 'Osasco' },
   ])
-
-  await page.goto('/entrar')
-  await page.getByLabel('E-mail').fill('lucilene@planetamotores.com.br')
-  await page.getByLabel('Senha').fill('motor2tempos')
-  await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page).toHaveURL(/\/clientes$/)
+  await page.goto('/clientes')
 })
 
 test('lista os clientes em ordem alfabética', async ({ page }) => {
