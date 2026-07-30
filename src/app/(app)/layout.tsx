@@ -3,12 +3,13 @@ import { Botao } from '@/componentes/botao'
 import { sair } from '@/modulos/auth/acoes'
 import { exigirUsuario } from '@/modulos/auth/guarda'
 
-// Somente rotas que existem. Painel e Financeiro entram no Plano 3.
 const MENU = [
   { href: '/ordens-servico', texto: 'Ordens de serviço' },
+  { href: '/painel', texto: 'Painel' },
   { href: '/clientes', texto: 'Clientes' },
   { href: '/estoque', texto: 'Estoque' },
   { href: '/compras', texto: 'Compras' },
+  { href: '/financeiro', texto: 'Financeiro' },
   { href: '/catalogo/servicos', texto: 'Catálogo' },
   { href: '/configuracoes', texto: 'Configurações' },
 ]

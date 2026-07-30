@@ -1,0 +1,14 @@
+# Certificado emitido e renovado sozinho, sem intervenção.
+{$DOMINIO} {
+	encode gzip
+	reverse_proxy app:3000
+
+	# Fotos e PDFs já são servidos por rota autenticada da aplicação; nada aqui
+	# deve ser cacheado por intermediário.
+	header /api/* Cache-Control "private, no-store"
+
+	log {
+		output file /data/acesso.log
+		format json
+	}
+}

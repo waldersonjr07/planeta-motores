@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
 import { ordensServico, servicos } from '../../src/db/schema'
-import { obterOs } from '../../src/modulos/os/consultas'
+import { listarOs, obterOs } from '../../src/modulos/os/consultas'
 import {
   adicionarItem,
   definirDesconto,
@@ -104,6 +104,18 @@ test('quantidade zero ou negativa é recusada', async () => {
 
   expect(zero.ok).toBe(false)
   expect(negativa.ok).toBe(false)
+})
+
+test('a lista de OS traz o total somado no banco, com desconto', async () => {
+  const { osId, servico, peca } = await cenarioOs()
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 })
+  await adicionarItem(osId, { tipo: 'peca', referenciaId: peca.id, quantidade: 2 })
+  await definirDesconto(osId, 1000)
+
+  // 21.000 + 2 × 3.800 − 1.000 = 27.600. O total da lista vem de um subselect
+  // correlacionado; sem a correlação certa ele volta zerado em silêncio.
+  const [linha] = await listarOs({})
+  expect(linha.totalCentavos).toBe(27600)
 })
 
 test('desconto negativo é recusado', async () => {

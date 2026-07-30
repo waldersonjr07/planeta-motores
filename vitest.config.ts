@@ -5,6 +5,9 @@ import dotenv from 'dotenv'
 dotenv.config({ path: '.env.test' })
 
 export default defineConfig({
+  // O tsconfig usa `jsx: preserve` (o Next cuida disso no build dele). No
+  // Vitest o esbuild cairia no runtime clássico e procuraria um `React` global.
+  esbuild: { jsx: 'automatic' },
   resolve: {
     // O código da aplicação importa por "@/", e o Vitest não lê os paths do
     // tsconfig por conta própria.

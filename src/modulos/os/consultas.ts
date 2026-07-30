@@ -88,11 +88,14 @@ export async function listarOs(
       aplicacao: equipamentos.aplicacao,
       marca: equipamentos.marca,
       modelo: equipamentos.modelo,
-      // Total já somado no banco: peça e serviço multiplicados pela quantidade.
+      // Total já somado no banco. Identificadores à mão, com apelido na tabela
+      // interna: o Drizzle renderiza `${tabela.coluna}` sem qualificação dentro
+      // de um template `sql`, e num subselect correlacionado o `"id"` passaria a
+      // resolver para a tabela de dentro — a soma voltaria zerada em silêncio.
       somaItens: sql<string>`coalesce((
-        select sum(${osItens.quantidade} * ${osItens.precoUnitarioCentavos})
-        from ${osItens}
-        where ${osItens.osId} = ${ordensServico.id}
+        select sum(i.quantidade * i.preco_unitario_centavos)
+        from os_itens i
+        where i.os_id = ordens_servico.id
       ), 0)`,
     })
     .from(ordensServico)

@@ -1,0 +1,56 @@
+# Produção na VPS: aplicação, banco e proxy reverso com HTTPS automático.
+# Uma fatura só, sem serviço externo de storage — as fotos ficam em volume.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://pm:${POSTGRES_PASSWORD}@postgres:5432/pm
+      NODE_ENV: production
+    volumes:
+      # Fotos das ordens de serviço. Fora daqui elas some a cada implantação.
+      - pm-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: pm
+      # Mesma ordenação do desenvolvimento: sem isso nome acentuado sai fora de
+      # ordem na lista de clientes.
+      POSTGRES_INITDB_ARGS: >-
+        --encoding=UTF8 --locale-provider=icu --icu-locale=pt-BR
+        --lc-collate=C --lc-ctype=C
+    volumes:
+      - pm-dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pm -d pm']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-dados:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  pm-dados:
+  pm-uploads:
+  caddy-dados:
+  caddy-config:

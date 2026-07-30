@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.test
+.env.local
+uploads
+storage
+test-results
+playwright-report
+.superpowers
+.claude
+docs
+*.log

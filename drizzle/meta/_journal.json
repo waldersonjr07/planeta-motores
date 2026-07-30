@@ -15,6 +15,13 @@
       "when": 1785422662113,
       "tag": "0001_wonderful_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785428252999,
+      "tag": "0002_tan_starhawk",
+      "breakpoints": true
     }
   ]
 }
