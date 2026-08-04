@@ -39,7 +39,13 @@ export function AbaOrcamento({
     acaoDefinirDesconto,
     null,
   )
-  const [itemLivre, setItemLivre] = useState(false)
+  // O tipo do item selecionado decide o que o formulário pede. Só serviço de
+  // catálogo tem preço padrão; peça e item digitado exigem valor.
+  const [tipoSelecionado, setTipoSelecionado] = useState<
+    '' | 'servico' | 'peca' | 'outros'
+  >('')
+  const itemLivre = tipoSelecionado === 'outros'
+  const exigeValor = tipoSelecionado === 'peca' || itemLivre
 
   return (
     <div className="flex flex-col gap-6">
@@ -119,7 +125,18 @@ export function AbaOrcamento({
                 nome="item"
                 required
                 className="col-span-5"
-                onChange={(evento) => setItemLivre(evento.target.value === 'outros')}
+                onChange={(evento) => {
+                  const valor = evento.target.value
+                  setTipoSelecionado(
+                    valor === 'outros'
+                      ? 'outros'
+                      : valor.startsWith('peca:')
+                        ? 'peca'
+                        : valor.startsWith('servico:')
+                          ? 'servico'
+                          : '',
+                  )
+                }}
               >
                 <option value="">Selecione…</option>
                 {/* Fora dos grupos do catálogo: não é item de tabela. */}
@@ -169,11 +186,11 @@ export function AbaOrcamento({
                 className="col-span-2"
               />
               <Campo
-                rotulo={itemLivre ? 'Valor unitário' : 'Preço (opcional)'}
+                rotulo={exigeValor ? 'Valor unitário' : 'Preço (opcional)'}
                 nome="precoUnitario"
-                required={itemLivre}
+                required={exigeValor}
                 className="col-span-3"
-                placeholder={itemLivre ? '0,00' : 'do catálogo'}
+                placeholder={exigeValor ? '0,00' : 'do catálogo'}
               />
 
               <div className="col-span-2">
@@ -187,6 +204,12 @@ export function AbaOrcamento({
               <p className="text-xs text-tinta-suave">
                 Item digitado vale só para esta OS: não entra no catálogo e, mesmo cobrado
                 como peça, não movimenta o estoque.
+              </p>
+            )}
+
+            {tipoSelecionado === 'peca' && (
+              <p className="text-xs text-tinta-suave">
+                Peça não tem preço de tabela: informe o valor cobrado neste serviço.
               </p>
             )}
 

@@ -19,9 +19,10 @@ export async function cenarioOs() {
     .insert(servicos)
     .values({ nome: 'Retífica de cilindro', precoPadraoCentavos: 21000 })
     .returning()
+  // Peça não tem preço de tabela: quem lança na OS informa o valor.
   const [peca] = await db
     .insert(pecas)
-    .values({ nome: 'Kit cilindro 40mm', controlaSaldo: true, precoVendaCentavos: 3800 })
+    .values({ nome: 'Kit cilindro 40mm', controlaSaldo: true })
     .returning()
 
   const r = await criarOs({

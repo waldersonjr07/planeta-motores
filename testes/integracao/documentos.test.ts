@@ -18,6 +18,7 @@ async function osOrcada() {
     tipo: 'peca',
     referenciaId: cenario.peca.id,
     quantidade: 2,
+    precoUnitarioCentavos: 3800,
   })
   await mudarSituacao(cenario.osId, 'em_diagnostico')
   await mudarSituacao(cenario.osId, 'orcamento_enviado')

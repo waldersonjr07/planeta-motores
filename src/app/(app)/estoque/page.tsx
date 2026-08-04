@@ -2,7 +2,6 @@ import { Botao } from '@/componentes/botao'
 import { Etiqueta } from '@/componentes/etiqueta'
 import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
 import { Celula, Linha, Tabela } from '@/componentes/tabela'
-import { formatarReais } from '@/lib/dinheiro'
 import { formatarQuantidade } from '@/lib/quantidade'
 import { acaoDefinirAtivoPeca } from '@/modulos/catalogo/acoes'
 import { listarSaldos } from '@/modulos/estoque/consultas'
@@ -43,7 +42,6 @@ export default async function PaginaEstoque() {
             colunas={[
               { texto: 'Peça' },
               { texto: 'Unidade' },
-              { texto: 'Preço de venda', numerica: true },
               { texto: 'Saldo', numerica: true },
               { texto: 'Mínimo', numerica: true },
               { texto: 'Controle' },
@@ -57,7 +55,6 @@ export default async function PaginaEstoque() {
                   {peca.marca && <span className="text-tinta-suave"> · {peca.marca}</span>}
                 </Celula>
                 <Celula tom="suave">{peca.unidade}</Celula>
-                <Celula numerica>{formatarReais(peca.precoVendaCentavos)}</Celula>
                 <Celula
                   numerica
                   forte

@@ -55,7 +55,12 @@ test('preço informado tem precedência sobre o do catálogo', async () => {
 test('os totais separam peça de serviço e aplicam desconto', async () => {
   const { osId, servico, peca } = await cenarioOs()
   await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 })
-  await adicionarItem(osId, { tipo: 'peca', referenciaId: peca.id, quantidade: 0.5 })
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    referenciaId: peca.id,
+    quantidade: 0.5,
+    precoUnitarioCentavos: 3800,
+  })
 
   await definirDesconto(osId, 1000)
 
@@ -123,6 +128,35 @@ test('item digitado como peça não referencia peça do catálogo', async () => 
   expect(os?.totais.pecasCentavos).toBe(1000)
 })
 
+test('peça do catálogo sem valor é recusada', async () => {
+  const { osId, peca } = await cenarioOs()
+
+  // Peça não tem preço de tabela: sem valor informado ela entraria zerada, e o
+  // cliente não veria o que está pagando.
+  const r = await adicionarItem(osId, {
+    tipo: 'peca',
+    referenciaId: peca.id,
+    quantidade: 1,
+  })
+
+  expect(r.ok).toBe(false)
+  if (r.ok) return
+  expect(r.erro).toBe('Informe o valor da peça.')
+})
+
+test('serviço do catálogo continua herdando o preço padrão', async () => {
+  const { osId, servico } = await cenarioOs()
+
+  const r = await adicionarItem(osId, {
+    tipo: 'servico',
+    referenciaId: servico.id,
+    quantidade: 1,
+  })
+
+  expect(r.ok).toBe(true)
+  expect((await obterOs(osId))?.itens[0].precoUnitarioCentavos).toBe(21000)
+})
+
 test('item digitado sem valor é recusado', async () => {
   const { osId } = await cenarioOs()
 
@@ -180,7 +214,12 @@ test('quantidade zero ou negativa é recusada', async () => {
 test('a lista de OS traz o total somado no banco, com desconto', async () => {
   const { osId, servico, peca } = await cenarioOs()
   await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 })
-  await adicionarItem(osId, { tipo: 'peca', referenciaId: peca.id, quantidade: 2 })
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    referenciaId: peca.id,
+    quantidade: 2,
+    precoUnitarioCentavos: 3800,
+  })
   await definirDesconto(osId, 1000)
 
   // 21.000 + 2 × 3.800 − 1.000 = 27.600. O total da lista vem de um subselect

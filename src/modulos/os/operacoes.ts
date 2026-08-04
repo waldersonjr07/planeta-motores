@@ -125,8 +125,12 @@ export async function adicionarItem(
       .where(eq(pecas.id, entrada.referenciaId))
       .limit(1)
     if (!peca) return falha('Peça não encontrada.')
+    // A oficina não tem tabela de preço de peça: o valor é o daquele serviço.
+    // Sem ele a peça entraria zerada e o cliente não veria o que está pagando.
+    if (entrada.precoUnitarioCentavos === undefined) {
+      return falha('Informe o valor da peça.')
+    }
     descricao = peca.marca ? `${peca.nome} ${peca.marca}` : peca.nome
-    precoCatalogo = peca.precoVendaCentavos
   }
 
   const [criado] = await db

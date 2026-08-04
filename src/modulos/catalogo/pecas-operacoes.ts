@@ -8,8 +8,20 @@ import {
   type EntradaPecaFormulario,
 } from './pecas-esquemas'
 
+/**
+ * Distingue o que veio do formulário do que já está normalizado pela forma da
+ * quantidade mínima: número no formulário, texto pronto para o `numeric`.
+ * Precisa ser type guard: o TypeScript não estreita a união só pelo `typeof`
+ * de uma propriedade.
+ */
+function ehDoFormulario(
+  entrada: EntradaPeca | EntradaPecaFormulario,
+): entrada is EntradaPecaFormulario {
+  return typeof entrada.quantidadeMinima === 'number'
+}
+
 function normalizar(entrada: EntradaPeca | EntradaPecaFormulario): EntradaPeca {
-  return 'precoVenda' in entrada ? paraEntradaPeca(entrada) : entrada
+  return ehDoFormulario(entrada) ? paraEntradaPeca(entrada) : entrada
 }
 
 export async function criarPeca(

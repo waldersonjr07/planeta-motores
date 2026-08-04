@@ -17,7 +17,6 @@ function entrada(extra: Record<string, unknown> = {}) {
     unidade: 'L',
     controlaSaldo: 'on',
     quantidadeMinima: '0,5',
-    precoVenda: '38,00',
     ...extra,
   })
 }
@@ -31,7 +30,20 @@ test('grava unidade, controle de saldo e mínimo fracionado', async () => {
   expect(peca?.unidade).toBe('L')
   expect(peca?.controlaSaldo).toBe(true)
   expect(Number(peca?.quantidadeMinima)).toBe(0.5)
-  expect(peca?.precoVendaCentavos).toBe(3800)
+})
+
+test('o cadastro não guarda preço: peça não tem tabela', async () => {
+  // O esquema ignora o campo, mesmo que alguém o envie pelo formulário.
+  const analise = entradaPeca.safeParse({
+    nome: 'Vela NGK',
+    unidade: 'un',
+    quantidadeMinima: '0',
+    precoVenda: '18,00',
+  })
+
+  expect(analise.success).toBe(true)
+  if (!analise.success) return
+  expect(analise.data).not.toHaveProperty('precoVenda')
 })
 
 test('caixa de seleção desmarcada desliga o controle de saldo', async () => {

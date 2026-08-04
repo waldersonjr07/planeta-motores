@@ -70,7 +70,7 @@ test('alterar item depois de aprovado e reenviar cria a versão 2', async () => 
   await mudarSituacao(osId, 'orcamento_enviado')
   await mudarSituacao(osId, 'aprovado')
 
-  await adicionarItem(osId, { tipo: 'peca', referenciaId: peca.id, quantidade: 1 })
+  await adicionarItem(osId, { tipo: 'peca', referenciaId: peca.id, quantidade: 1, precoUnitarioCentavos: 3800 })
   await mudarSituacao(osId, 'orcamento_enviado', { observacao: 'Achou cilindro riscado' })
 
   const os = await obterOs(osId)

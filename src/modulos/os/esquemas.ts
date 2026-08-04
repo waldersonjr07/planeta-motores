@@ -28,7 +28,7 @@ export const entradaItemOs = z
     referenciaId: z.string().uuid('Selecione o item').optional(),
     descricao: z.string().trim().min(1, 'Descreva o item').optional(),
     quantidade: z.number().positive('A quantidade precisa ser maior que zero'),
-    /** No item do catálogo é opcional (herda o preço); no digitado é obrigatório. */
+    /** Só o serviço de catálogo herda preço; peça e item digitado exigem valor. */
     precoUnitarioCentavos: z.number().int().min(0).optional(),
   })
   .refine((dados) => dados.referenciaId || dados.descricao, {
@@ -36,7 +36,10 @@ export const entradaItemOs = z
     path: ['descricao'],
   })
   .refine(
-    (dados) => dados.referenciaId || dados.precoUnitarioCentavos !== undefined,
+    (dados) =>
+      // Peça não tem preço de tabela: sem valor informado, entraria zerada.
+      (dados.tipo === 'servico' && dados.referenciaId) ||
+      dados.precoUnitarioCentavos !== undefined,
     { message: 'Informe o valor do item', path: ['precoUnitarioCentavos'] },
   )
 

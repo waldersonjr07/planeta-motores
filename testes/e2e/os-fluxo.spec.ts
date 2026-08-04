@@ -21,7 +21,6 @@ test.beforeEach(async ({ page }) => {
     nome: 'Kit cilindro 40mm',
     controlaSaldo: true,
     quantidadeMinima: '1',
-    precoVendaCentavos: 23000,
   })
 })
 
@@ -54,8 +53,10 @@ test('percorre a OS do recebimento até a entrega e baixa o estoque', async ({ p
   await page.getByRole('button', { name: 'Adicionar item' }).click()
   await expect(page.getByRole('cell', { name: 'Retífica de cilindro' })).toBeVisible()
 
-  await page.getByLabel('Item').selectOption({ label: 'Kit cilindro 40mm — R$ 230,00' })
+  // Peça não tem preço de tabela: o valor é digitado aqui.
+  await page.getByLabel('Item').selectOption({ label: 'Kit cilindro 40mm (un)' })
   await page.getByLabel('Quantidade').fill('2')
+  await page.getByLabel('Valor unitário').fill('230,00')
   await page.getByRole('button', { name: 'Adicionar item' }).click()
 
   // 21.000 + 2 × 23.000 = 67.000 centavos. O valor aparece no cabeçalho e na

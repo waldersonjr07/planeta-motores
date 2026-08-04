@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { parsearQuantidade } from '@/lib/quantidade'
 import { textoObrigatorio } from '@/lib/validacao'
-import { precoDigitado } from './servicos-esquemas'
 
 const quantidadeDigitada = z
   .string()
@@ -31,18 +30,20 @@ export const entradaPeca = z.object({
     .optional()
     .transform((v) => v === 'on' || v === 'true'),
   quantidadeMinima: quantidadeDigitada,
-  precoVenda: precoDigitado,
 })
 
 export type EntradaPecaFormulario = z.infer<typeof entradaPeca>
 
+/**
+ * Peça não tem preço: a oficina não trabalha com tabela de peça, e o valor
+ * cobrado é definido em cada orçamento. Aqui só existe o que é de estoque.
+ */
 export type EntradaPeca = {
   nome: string
   marca: string | null
   unidade: 'un' | 'L' | 'kg' | 'm'
   controlaSaldo: boolean
   quantidadeMinima: string
-  precoVendaCentavos: number
 }
 
 export function paraEntradaPeca(dados: EntradaPecaFormulario): EntradaPeca {
@@ -53,6 +54,5 @@ export function paraEntradaPeca(dados: EntradaPecaFormulario): EntradaPeca {
     controlaSaldo: dados.controlaSaldo,
     // numeric é escrito como texto para não perder precisão no caminho.
     quantidadeMinima: dados.quantidadeMinima.toFixed(3),
-    precoVendaCentavos: dados.precoVenda,
   }
 }

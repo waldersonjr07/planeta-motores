@@ -196,9 +196,10 @@ export default async function FichaOs({
                 valor: `servico:${s.id}`,
                 texto: `${s.nome} — ${formatarReais(s.precoPadraoCentavos)}`,
               })),
+              // Peça não tem preço de tabela: o valor é digitado a cada OS.
               pecas: pecas.map((p) => ({
                 valor: `peca:${p.id}`,
-                texto: `${p.nome}${p.marca ? ` ${p.marca}` : ''} — ${formatarReais(p.precoVendaCentavos)}`,
+                texto: `${p.nome}${p.marca ? ` ${p.marca}` : ''} (${p.unidade})`,
               })),
             }}
           />

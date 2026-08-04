@@ -10,7 +10,6 @@ test.beforeEach(async ({ page }) => {
     unidade: 'L',
     controlaSaldo: true,
     quantidadeMinima: '2',
-    precoVendaCentavos: 3800,
   })
   await db.insert(fornecedores).values({ nome: 'Peças Rio Claro' })
 })

@@ -20,7 +20,7 @@ export function FormularioPeca() {
           className="col-span-4"
           erro={campos.nome}
         />
-        <Campo rotulo="Marca" nome="marca" className="col-span-3" />
+        <Campo rotulo="Marca" nome="marca" className="col-span-4" />
         <CampoSelecao
           rotulo="Unidade"
           nome="unidade"
@@ -33,25 +33,18 @@ export function FormularioPeca() {
           ]}
         />
         <Campo
-          rotulo="Preço de venda"
-          nome="precoVenda"
-          placeholder="0,00"
-          className="col-span-3"
-          erro={campos.precoVenda}
-        />
-
-        <Campo
           rotulo="Quantidade mínima"
           nome="quantidadeMinima"
           placeholder="0"
-          className="col-span-3"
+          className="col-span-2"
           erro={campos.quantidadeMinima}
         />
+
         <label className="col-span-5 flex items-center gap-2 pb-2 text-sm">
           <input type="checkbox" name="controlaSaldo" className="size-4" />
           Controla saldo em estoque
         </label>
-        <div className="col-span-4">
+        <div className="col-span-3">
           <Botao type="submit" disabled={pendente} className="w-full">
             {pendente ? 'Salvando…' : 'Cadastrar peça'}
           </Botao>
