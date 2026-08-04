@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { clientes, equipamentos } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
@@ -6,6 +6,13 @@ import type { EntradaEquipamento } from './equipamentos-esquemas'
 import type { EntradaCliente, EntradaClienteRapido } from './esquemas'
 
 const DOCUMENTO_DUPLICADO = 'Já existe cliente cadastrado com esse CPF/CNPJ.'
+
+/**
+ * Data vinda do relógio do banco, não do Node. `criadoEm` já usa `defaultNow()`;
+ * se a atualização usasse `new Date()`, os dois relógios poderiam divergir por
+ * alguns milissegundos e a data de atualização sairia anterior à de criação.
+ */
+const AGORA = sql`now()`
 
 /**
  * Reconhece a violação do índice único de documento. O Drizzle embrulha o erro
@@ -74,7 +81,7 @@ export async function atualizarCliente(
   try {
     const alterados = await db
       .update(clientes)
-      .set({ ...entrada, atualizadoEm: new Date() })
+      .set({ ...entrada, atualizadoEm: AGORA })
       .where(eq(clientes.id, id))
       .returning({ id: clientes.id })
 
@@ -92,7 +99,7 @@ export async function definirAtivoCliente(
 ): Promise<Resultado<null>> {
   const alterados = await db
     .update(clientes)
-    .set({ ativo, atualizadoEm: new Date() })
+    .set({ ativo, atualizadoEm: AGORA })
     .where(eq(clientes.id, id))
     .returning({ id: clientes.id })
 

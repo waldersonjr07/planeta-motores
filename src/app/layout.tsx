@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: 'Controle de clientes, ordens de serviço e estoque',
 }
 
+export const viewport = {
+  // O marinho do emblema pinta a barra do navegador no celular.
+  themeColor: '#16283f',
+}
+
 export default function LayoutRaiz({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { configuracoes } from '@/db/schema'
 import { sucesso, type Resultado } from '@/lib/resultado'
@@ -11,7 +11,8 @@ export async function salvarConfiguracoes(
   await obterConfiguracoes() // garante a existência da linha
   await db
     .update(configuracoes)
-    .set({ ...entrada, atualizadoEm: new Date() })
+    // Relógio do banco, o mesmo do `defaultNow()` da criação.
+    .set({ ...entrada, atualizadoEm: sql`now()` })
     .where(eq(configuracoes.id, LINHA_UNICA))
   return sucesso(null)
 }

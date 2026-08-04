@@ -238,7 +238,9 @@ function carimboDaEtapa(
   para: SituacaoOs,
   opcoes: { motivo?: string },
 ): Record<string, unknown> {
-  const agora = new Date()
+  // Relógio do banco: `recebidoEm` vem de `defaultNow()`, e as etapas seguintes
+  // precisam ser comparáveis com ele sem depender de dois relógios baterem.
+  const agora = sql`now()`
   switch (para) {
     case 'em_diagnostico':
       return { diagnosticadoEm: agora }

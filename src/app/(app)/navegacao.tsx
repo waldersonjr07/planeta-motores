@@ -40,7 +40,7 @@ export function Navegacao() {
     <nav aria-label="Seções do sistema" className="flex flex-col gap-6">
       {GRUPOS.map((grupo) => (
         <div key={grupo.titulo}>
-          <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-tinta-fraca">
+          <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-marca-texto/75">
             {grupo.titulo}
           </p>
           <ul className="flex flex-col gap-0.5">
@@ -53,13 +53,17 @@ export function Navegacao() {
 
               return (
                 <li key={item.href}>
+                  {/*
+                    O teal é a única cor cromática do menu, e existe para dizer
+                    onde você está. Vem dos continentes do planeta no emblema.
+                  */}
                   <Link
                     href={item.href}
                     aria-current={ativo ? 'page' : undefined}
-                    className={`block rounded-md px-3 py-1.5 text-sm ${
+                    className={`block rounded-md border-l-2 px-3 py-1.5 text-sm transition-colors ${
                       ativo
-                        ? 'bg-acao-fundo font-medium text-acao-escura'
-                        : 'text-tinta-suave hover:bg-realce hover:text-tinta'
+                        ? 'border-planeta bg-marca-clara font-medium text-planeta'
+                        : 'border-transparent text-marca-texto hover:bg-marca-clara/60 hover:text-white'
                     }`}
                   >
                     {item.texto}

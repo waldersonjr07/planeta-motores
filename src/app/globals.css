@@ -1,12 +1,23 @@
 @import 'tailwindcss';
 
 /*
- * Paleta de instrumento, não de vitrine: a Lucilene passa o dia aqui, então
- * nada de cor saturada em área grande. O azul é o único tom forte e fica
- * reservado para ação; âmbar, vermelho e verde só aparecem quando o número
- * exige atenção.
+ * Paleta tirada do emblema da Planeta Motores: o marinho é o campo do logo, o
+ * aço é o anel e o letreiro, e o teal vem dos continentes do planeta.
+ *
+ * Regra de uso: o marinho carrega a marca (menu e tela de entrada), o aço faz
+ * estrutura, e o teal aparece uma vez só — marcando onde você está no menu. O
+ * resto da tela fica claro e quieto, porque a Lucilene passa o dia aqui e cor
+ * saturada em área grande cansa. Âmbar, vermelho e verde continuam reservados
+ * para quando o número pede atenção.
  */
 @theme {
+  --color-marca: #16283f;
+  --color-marca-clara: #1d3350;
+  --color-marca-borda: #2a3f5f;
+  --color-marca-texto: #afbbcb;
+  --color-aco: #c8cdd3;
+  --color-planeta: #5fb3b8;
+
   --color-tinta: #16202a;
   --color-tinta-suave: #5b6976;
   --color-tinta-fraca: #8b97a3;
@@ -18,8 +29,9 @@
   --color-borda: #dde2e8;
   --color-borda-forte: #c3ccd6;
 
-  --color-acao: #17549a;
-  --color-acao-escura: #113f75;
+  /* Azul do oceano do planeta, no emblema. */
+  --color-acao: #1e5391;
+  --color-acao-escura: #143d6e;
   --color-acao-fundo: #eaf1f9;
 
   --color-atencao: #9a5b06;

@@ -12,12 +12,7 @@ export function FormularioLogin() {
   const [resultado, acao, pendente] = useActionState(entrar, null)
 
   return (
-    <form action={acao} className="flex w-full max-w-sm flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Planeta Motores</h1>
-        <p className="mt-1 text-sm text-tinta-suave">Motores 2 e 4 tempos</p>
-      </div>
-
+    <form action={acao} className="flex w-full flex-col gap-5">
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">

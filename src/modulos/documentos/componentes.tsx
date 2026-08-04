@@ -1,12 +1,23 @@
-import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import path from 'node:path'
+import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { formatarData } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
 import { formatarQuantidade } from '@/lib/quantidade'
 
+/** Lido do disco: o PDF é gerado no servidor, sem passar pelo navegador. */
+const CAMINHO_EMBLEMA = path.join(process.cwd(), 'public', 'logo-planeta-motores.jpeg')
+
 export const estilos = StyleSheet.create({
   pagina: { padding: 40, fontSize: 10, fontFamily: 'Helvetica' },
-  cabecalho: { borderBottomWidth: 1, borderBottomColor: '#999', paddingBottom: 8, marginBottom: 16 },
-  empresa: { fontSize: 14, fontFamily: 'Helvetica-Bold' },
+  cabecalho: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#999',
+    paddingBottom: 10,
+    marginBottom: 16,
+  },
+  marca: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  emblema: { width: 46, height: 46, borderRadius: 23 },
+  empresa: { fontSize: 14, fontFamily: 'Helvetica-Bold', letterSpacing: 1.2 },
   contato: { color: '#555', marginTop: 2 },
   titulo: { fontSize: 12, fontFamily: 'Helvetica-Bold', marginTop: 12, marginBottom: 6 },
   linha: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
@@ -61,8 +72,17 @@ export function Cabecalho({ empresa, titulo }: { empresa: DadosEmpresa; titulo: 
 
   return (
     <View style={estilos.cabecalho}>
-      <Text style={estilos.empresa}>{empresa.empresaNome}</Text>
-      {contato ? <Text style={estilos.contato}>{contato}</Text> : null}
+      <View style={estilos.marca}>
+        {/*
+          O emblema no papel que o cliente leva embora. Recortado em círculo,
+          como na tela — o arquivo é quadrado com o campo marinho embutido.
+        */}
+        <Image src={CAMINHO_EMBLEMA} style={estilos.emblema} />
+        <View>
+          <Text style={estilos.empresa}>{empresa.empresaNome.toUpperCase()}</Text>
+          {contato ? <Text style={estilos.contato}>{contato}</Text> : null}
+        </View>
+      </View>
       <Text style={estilos.titulo}>{titulo}</Text>
     </View>
   )
@@ -118,4 +138,4 @@ export function TabelaDeItens({
   )
 }
 
-export { Document, Page, Text, View, formatarData, formatarReais }
+export { Document, Image, Page, Text, View, formatarData, formatarReais }

@@ -30,7 +30,12 @@ export function AbaFotos({ osId, fotos }: { osId: string; fotos: Foto[] }) {
               key={foto.id}
               className="overflow-hidden rounded-lg border border-borda bg-superficie"
             >
-              {/* Rota autenticada, não arquivo público. */}
+              {/*
+                Rota autenticada, não arquivo público — por isso `img` puro e
+                não `next/image`: o otimizador busca a imagem pelo servidor,
+                sem o cookie de sessão, e levaria 401.
+              */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/api/fotos/${foto.id}`}
                 alt={foto.legenda ?? MOMENTOS[foto.momento]}
