@@ -27,9 +27,8 @@ export function FormularioPeca() {
           className="col-span-2"
           opcoes={[
             { valor: 'un', texto: 'unidade' },
-            { valor: 'L', texto: 'litro' },
-            { valor: 'kg', texto: 'quilo' },
-            { valor: 'm', texto: 'metro' },
+            { valor: 'L', texto: 'L' },
+            { valor: 'mL', texto: 'mL' },
           ]}
         />
         <Campo

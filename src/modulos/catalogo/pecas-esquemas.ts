@@ -23,7 +23,7 @@ export const entradaPeca = z.object({
     .trim()
     .optional()
     .transform((v) => (v ? v : null)),
-  unidade: z.enum(['un', 'L', 'kg', 'm']),
+  unidade: z.enum(['un', 'L', 'mL']),
   // Caixa de seleção não é enviada quando desmarcada; ausência significa desligado.
   controlaSaldo: z
     .string()
@@ -41,7 +41,7 @@ export type EntradaPecaFormulario = z.infer<typeof entradaPeca>
 export type EntradaPeca = {
   nome: string
   marca: string | null
-  unidade: 'un' | 'L' | 'kg' | 'm'
+  unidade: 'un' | 'L' | 'mL'
   controlaSaldo: boolean
   quantidadeMinima: string
 }

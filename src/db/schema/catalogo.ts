@@ -9,7 +9,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-export const unidadePeca = pgEnum('unidade_peca', ['un', 'L', 'kg', 'm'])
+/** A oficina compra peça por unidade e fluido por volume. Nada é vendido a peso. */
+export const unidadePeca = pgEnum('unidade_peca', ['un', 'L', 'mL'])
 
 export const servicos = pgTable('servicos', {
   id: uuid('id').primaryKey().defaultRandom(),
