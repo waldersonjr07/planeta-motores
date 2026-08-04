@@ -146,10 +146,15 @@ Anotadas porque custaram tempo e reaparecem com facilidade:
 - **Erro do Postgres vem embrulhado pelo Drizzle.** Para reconhecer violação de
   unicidade, verifique o SQLSTATE e o nome da restrição descendo a cadeia de
   `cause` — casar por texto da mensagem não funciona.
-- **Não rode `npm run build` com o `npm run dev` ligado.** Os dois escrevem no
-  mesmo `.next`. O build de produção sobrescreve os pedaços que o servidor de
-  desenvolvimento está usando, e a aplicação passa a devolver 500 com
+- **Não rode `npm run build` nem `npm run teste:e2e` com o `npm run dev`
+  ligado.** Os três escrevem no mesmo `.next` — o Playwright sobe o próprio
+  servidor de desenvolvimento na porta 3100. O build de produção sobrescreve os
+  pedaços que o servidor está usando, e a aplicação passa a devolver 500 com
   `Cannot find module './XXX.js'` — erro que não tem nada a ver com o código.
   Se acontecer: pare o servidor, apague `.next` e suba de novo.
+- **Depois de apagar `.next`, a primeira rodada de e2e é muito mais lenta.** A
+  compilação sob demanda do `next dev` no Windows passa de 30 s por rota. Por
+  isso o `timeout` do Playwright está em 90 s: sem ele, o teste falha por tempo
+  e parece defeito.
 - **Teste ponta a ponta verde não substitui `npm run build`.** O `next dev` não
   faz verificação de tipos; erro de tipo só aparece no build.

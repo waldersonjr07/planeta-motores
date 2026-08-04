@@ -13,8 +13,9 @@ import {
   servicos,
 } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
+import { criarClienteComEquipamento } from '@/modulos/clientes/operacoes'
 import { registrarMovimento, type Transacao } from '@/modulos/estoque/operacoes'
-import type { EntradaItemOs, EntradaOs } from './esquemas'
+import type { EntradaItemOs, EntradaOs, EntradaOsRapida } from './esquemas'
 import {
   SITUACOES,
   aceitaAlteracaoDeItem,
@@ -71,6 +72,40 @@ export async function criarOs(
     await tx.insert(osHistorico).values({ osId: criada.id, situacaoNova: 'recebido' })
 
     return sucesso({ id: criada.id, numero: criada.numero })
+  })
+}
+
+/**
+ * Abre a OS cadastrando cliente e máquina na mesma ação. O cadastro sai por
+ * baixo, mas sai de verdade: a OS continua ligada a um cliente e a um
+ * equipamento, então o histórico por motor e a reincidência seguem valendo.
+ */
+export async function criarOsComClienteNovo(
+  entrada: EntradaOsRapida,
+): Promise<Resultado<{ id: string; numero: string }>> {
+  const cadastro = await criarClienteComEquipamento({
+    cliente: {
+      nome: entrada.nomeCliente,
+      documento: entrada.documentoCliente,
+      telefone: entrada.telefoneCliente,
+    },
+    equipamento: {
+      tipoMotor: entrada.tipoMotor,
+      aplicacao: entrada.aplicacao,
+      marca: entrada.marca,
+      modelo: entrada.modelo,
+      numeroSerie: null,
+      observacoes: null,
+    },
+  })
+  if (!cadastro.ok) return cadastro
+
+  return criarOs({
+    clienteId: cadastro.dados.clienteId,
+    equipamentoId: cadastro.dados.equipamentoId,
+    problemaRelatado: entrada.problemaRelatado,
+    acessoriosRecebidos: entrada.acessoriosRecebidos,
+    observacoes: entrada.observacoes,
   })
 }
 

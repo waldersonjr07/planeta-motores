@@ -38,3 +38,16 @@ export const entradaCliente = z.object({
 })
 
 export type EntradaCliente = z.infer<typeof entradaCliente>
+
+/**
+ * Cadastro rápido, feito na abertura da OS. Só o que dá para perguntar com o
+ * cliente na frente e o motor na bancada — o resto se completa depois, na
+ * ficha. Sem isso a Lucilene teria de sair da OS para cadastrar e voltar.
+ */
+export const entradaClienteRapido = z.object({
+  nome: textoObrigatorio('Nome do cliente'),
+  documento: documentoOpcional,
+  telefone: telefoneOpcional,
+})
+
+export type EntradaClienteRapido = z.infer<typeof entradaClienteRapido>

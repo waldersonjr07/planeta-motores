@@ -7,6 +7,13 @@ export default defineConfig({
   testDir: './testes/e2e',
   // Os testes compartilham o banco de teste e o limpam entre casos.
   workers: 1,
+  /*
+   * 30 s (o padrão) não cobre a primeira visita a uma rota depois de o `.next`
+   * ser apagado: no Windows, a compilação sob demanda do `next dev` passa
+   * disso com folga e o teste falha por tempo, não por defeito.
+   */
+  timeout: 90_000,
+  expect: { timeout: 10_000 },
   use: { baseURL: 'http://localhost:3100' },
   webServer: {
     command: 'npm run dev -- --port 3100',

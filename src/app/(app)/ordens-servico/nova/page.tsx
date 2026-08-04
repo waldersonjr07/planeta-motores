@@ -14,7 +14,7 @@ export default async function PaginaNovaOs() {
 
       <CabecalhoPagina
         titulo="Nova ordem de serviço"
-        descricao="O orçamento é montado depois, na ficha da OS, com o diagnóstico do Ivan."
+        descricao="Escolha um cliente já cadastrado ou digite os dados na hora. O orçamento é montado depois, na ficha da OS, com o diagnóstico do Ivan."
       />
 
       <Cartao>

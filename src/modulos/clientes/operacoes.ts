@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { clientes } from '@/db/schema'
+import { clientes, equipamentos } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
-import type { EntradaCliente } from './esquemas'
+import type { EntradaEquipamento } from './equipamentos-esquemas'
+import type { EntradaCliente, EntradaClienteRapido } from './esquemas'
 
 const DOCUMENTO_DUPLICADO = 'Já existe cliente cadastrado com esse CPF/CNPJ.'
 
@@ -31,6 +32,35 @@ export async function criarCliente(
   try {
     const [criado] = await db.insert(clientes).values(entrada).returning({ id: clientes.id })
     return sucesso({ id: criado.id })
+  } catch (erro) {
+    if (eDocumentoDuplicado(erro)) return falha(DOCUMENTO_DUPLICADO)
+    throw erro
+  }
+}
+
+/**
+ * Cria cliente e equipamento numa transação só, para o cadastro rápido da
+ * abertura de OS. Ou entram os dois, ou não entra nenhum — cliente sem motor
+ * nenhum, criado por uma OS que falhou, seria lixo no cadastro.
+ */
+export async function criarClienteComEquipamento(entrada: {
+  cliente: EntradaClienteRapido
+  equipamento: Omit<EntradaEquipamento, 'clienteId'>
+}): Promise<Resultado<{ clienteId: string; equipamentoId: string }>> {
+  try {
+    return await db.transaction(async (tx) => {
+      const [cliente] = await tx
+        .insert(clientes)
+        .values(entrada.cliente)
+        .returning({ id: clientes.id })
+
+      const [equipamento] = await tx
+        .insert(equipamentos)
+        .values({ ...entrada.equipamento, clienteId: cliente.id })
+        .returning({ id: equipamentos.id })
+
+      return sucesso({ clienteId: cliente.id, equipamentoId: equipamento.id })
+    })
   } catch (erro) {
     if (eDocumentoDuplicado(erro)) return falha(DOCUMENTO_DUPLICADO)
     throw erro

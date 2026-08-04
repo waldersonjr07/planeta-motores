@@ -6,13 +6,14 @@ import { parsearReais } from '@/lib/dinheiro'
 import { parsearQuantidade } from '@/lib/quantidade'
 import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
 import { usuarioAtual } from '@/modulos/auth/guarda'
-import { entradaItemOs, entradaOs } from './esquemas'
+import { entradaItemOs, entradaOs, entradaOsRapida } from './esquemas'
 import { removerFoto, salvarFoto } from './fotos'
 import type { MomentoFoto } from './momentos'
 import {
   adicionarItem,
   atualizarDiagnostico,
   criarOs,
+  criarOsComClienteNovo,
   definirDesconto,
   mudarSituacao,
   removerItem,
@@ -34,11 +35,28 @@ export async function acaoCriarOs(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  const selecionado = String(formulario.get('equipamento') ?? '')
+  const dados = objeto(formulario)
+
+  // "novo" é o cadastro rápido: cliente e máquina digitados na própria
+  // abertura da OS, para não obrigar a sair da tela e voltar.
+  if (selecionado === 'novo') {
+    const analise = entradaOsRapida.safeParse(dados)
+    if (!analise.success) return falhaDeValidacao(analise.error)
+
+    const r = await criarOsComClienteNovo(analise.data)
+    if (!r.ok) return r
+
+    revalidatePath('/ordens-servico')
+    revalidatePath('/clientes')
+    redirect(`/ordens-servico/${r.dados.id}`)
+  }
+
   // O seletor entrega "clienteId:equipamentoId" numa opção só, agrupada por
   // cliente — evita dois selects dependentes por um ganho que não existe.
-  const par = String(formulario.get('equipamento') ?? '').split(':')
+  const par = selecionado.split(':')
   const analise = entradaOs.safeParse({
-    ...objeto(formulario),
+    ...dados,
     clienteId: par[0] ?? '',
     equipamentoId: par[1] ?? '',
   })

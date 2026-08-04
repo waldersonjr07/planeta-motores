@@ -1,11 +1,11 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
-import { CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
-import { Vazio } from '@/componentes/pagina'
 import type { EquipamentoParaSelecao } from '@/modulos/clientes/equipamentos-consultas'
+import { APLICACOES } from '@/modulos/clientes/equipamentos-descricao'
 import { acaoCriarOs } from '@/modulos/os/acoes'
 
 export function FormularioNovaOs({
@@ -14,6 +14,8 @@ export function FormularioNovaOs({
   equipamentos: EquipamentoParaSelecao[]
 }) {
   const [resultado, enviar, pendente] = useActionState(acaoCriarOs, null)
+  const [clienteNovo, setClienteNovo] = useState(equipamentos.length === 0)
+  const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
 
   // Agrupa por cliente para o <optgroup>: a Lucilene procura pelo dono do
   // motor, não pelo motor solto.
@@ -24,15 +26,6 @@ export function FormularioNovaOs({
     porCliente.set(equipamento.clienteNome, lista)
   }
 
-  if (equipamentos.length === 0) {
-    return (
-      <Vazio>
-        Nenhum equipamento cadastrado. Cadastre o cliente e o equipamento dele antes de
-        abrir a ordem de serviço.
-      </Vazio>
-    )
-  }
-
   return (
     <form action={enviar} className="flex flex-col gap-5">
       <GradeFormulario>
@@ -41,8 +34,12 @@ export function FormularioNovaOs({
           nome="equipamento"
           required
           className="col-span-8"
+          defaultValue={equipamentos.length === 0 ? 'novo' : ''}
+          onChange={(evento) => setClienteNovo(evento.target.value === 'novo')}
         >
           <option value="">Selecione…</option>
+          {/* Fora dos grupos: não é cliente da carteira, é cadastro na hora. */}
+          <option value="novo">Cliente novo (digitar)</option>
           {[...porCliente.entries()].map(([cliente, itens]) => (
             <optgroup key={cliente} label={cliente}>
               {itens.map((item) => (
@@ -56,7 +53,64 @@ export function FormularioNovaOs({
             </optgroup>
           ))}
         </CampoSelecao>
+      </GradeFormulario>
 
+      {clienteNovo && (
+        <div className="flex flex-col gap-4 rounded-lg border border-borda bg-realce p-4">
+          <div>
+            <p className="text-sm font-semibold">Cadastro rápido</p>
+            <p className="mt-0.5 text-sm text-tinta-suave">
+              Cliente e máquina entram no cadastro junto com a OS. O que faltar se
+              completa depois, na ficha do cliente.
+            </p>
+          </div>
+
+          <GradeFormulario>
+            <Campo
+              rotulo="Nome do cliente"
+              nome="nomeCliente"
+              required={clienteNovo}
+              className="col-span-6"
+              erro={campos.nomeCliente}
+            />
+            <Campo
+              rotulo="CPF/CNPJ"
+              nome="documentoCliente"
+              className="col-span-3"
+              erro={campos.documentoCliente}
+            />
+            <Campo
+              rotulo="Telefone"
+              nome="telefoneCliente"
+              className="col-span-3"
+              erro={campos.telefoneCliente}
+            />
+
+            <CampoSelecao
+              rotulo="Máquina"
+              nome="aplicacao"
+              className="col-span-3"
+              opcoes={Object.entries(APLICACOES).map(([valor, texto]) => ({
+                valor,
+                texto,
+              }))}
+            />
+            <CampoSelecao
+              rotulo="Motor"
+              nome="tipoMotor"
+              className="col-span-2"
+              opcoes={[
+                { valor: '2T', texto: '2 tempos' },
+                { valor: '4T', texto: '4 tempos' },
+              ]}
+            />
+            <Campo rotulo="Marca" nome="marca" className="col-span-3" />
+            <Campo rotulo="Modelo" nome="modelo" className="col-span-4" />
+          </GradeFormulario>
+        </div>
+      )}
+
+      <GradeFormulario>
         <CampoTexto
           rotulo="Problema relatado pelo cliente"
           nome="problemaRelatado"

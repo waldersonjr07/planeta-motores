@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { documentoOpcional, telefoneOpcional, textoObrigatorio } from '@/lib/validacao'
 
 const opcional = z
   .string()
@@ -15,6 +16,33 @@ export const entradaOs = z.object({
 })
 
 export type EntradaOs = z.infer<typeof entradaOs>
+
+/**
+ * Abertura de OS com cliente e máquina digitados na hora. Existe porque na
+ * correria não dá para parar, cadastrar o cliente, cadastrar o equipamento e
+ * só então abrir a OS — o cadastro sai junto, numa tela só.
+ */
+export const entradaOsRapida = z.object({
+  nomeCliente: textoObrigatorio('Nome do cliente'),
+  documentoCliente: documentoOpcional,
+  telefoneCliente: telefoneOpcional,
+  tipoMotor: z.enum(['2T', '4T']),
+  aplicacao: z.enum([
+    'rocadeira',
+    'motosserra',
+    'motobomba',
+    'gerador',
+    'soprador',
+    'outro',
+  ]),
+  marca: opcional,
+  modelo: opcional,
+  problemaRelatado: opcional,
+  acessoriosRecebidos: opcional,
+  observacoes: opcional,
+})
+
+export type EntradaOsRapida = z.infer<typeof entradaOsRapida>
 
 /**
  * Um item vem do catálogo (`referenciaId`) ou é digitado na hora (`descricao`).
