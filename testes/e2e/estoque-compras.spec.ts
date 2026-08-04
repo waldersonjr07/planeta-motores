@@ -27,7 +27,7 @@ test('ajuste move o saldo e a peça sai da lista de reposição', async ({ page 
 
 test('a confirmação mostra o saldo antes e depois, e dá para cancelar', async ({ page }) => {
   await page.goto('/estoque')
-  await page.getByLabel('Peça').selectOption({ label: 'Óleo 2 tempos (L)' })
+  await page.getByLabel('Peça do ajuste').selectOption({ label: 'Óleo 2 tempos (L)' })
   await page.getByLabel('Quantidade do ajuste').fill('10')
   await page.getByRole('button', { name: 'Lançar ajuste' }).click()
 

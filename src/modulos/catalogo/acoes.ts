@@ -53,13 +53,15 @@ export async function acaoSalvarPeca(
   const r = id ? await atualizarPeca(id, analise.data) : await criarPeca(analise.data)
   if (!r.ok) return r
 
-  revalidatePath('/catalogo/pecas')
+  // A peça é gerenciada na tela de Estoque, não no catálogo.
+  revalidatePath('/estoque')
   return { ok: true, dados: null }
 }
 
 export async function acaoDefinirAtivoPeca(formulario: FormData): Promise<void> {
   await definirAtivoPeca(String(formulario.get('id') ?? ''), formulario.get('ativo') === 'true')
-  revalidatePath('/catalogo/pecas')
+  // A peça é gerenciada na tela de Estoque, não no catálogo.
+  revalidatePath('/estoque')
 }
 
 export async function acaoSalvarFornecedor(

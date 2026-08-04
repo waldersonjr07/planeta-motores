@@ -166,7 +166,7 @@ test('a lista filtra por situação e encontra pela busca', async ({ page }) => 
   await expect(page.getByRole('cell', { name: 'Marcos Andrade' })).toBeVisible()
 })
 
-test('cancelar pede motivo e encerra a OS', async ({ page }) => {
+test('cancelar encerra a OS em um clique, sem pedir justificativa', async ({ page }) => {
   await page.goto('/ordens-servico/nova')
   await page
     .getByLabel('Cliente e equipamento')
@@ -174,11 +174,41 @@ test('cancelar pede motivo e encerra a OS', async ({ page }) => {
   await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
   await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
 
-  await mudarSituacaoNaTela(page, 'Cancelado', 'Aberta por engano')
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+  await expect(page.getByRole('textbox', { name: /^Por que/ })).toHaveCount(0)
+  await page.getByRole('button', { name: /^Cancelado/ }).click()
 
   await expect(page.getByText('Ordem de serviço encerrada.')).toBeVisible()
+})
+
+test('a observação do painel vai para o histórico', async ({ page }) => {
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+  await page.getByLabel('Observação (opcional)').fill('Aberta por engano')
+  await page.getByRole('button', { name: /^Cancelado/ }).click()
+
   await page.getByRole('link', { name: /^Histórico/ }).click()
   await expect(page.getByText('Aberta por engano')).toBeVisible()
+})
+
+test('o botão de voltar leva à lista de ordens de serviço', async ({ page }) => {
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Voltar para ordens de serviço' }).click()
+
+  await expect(page).toHaveURL(/\/ordens-servico$/)
+  await expect(page.getByRole('heading', { name: 'Ordens de serviço' })).toBeVisible()
 })
 
 test('o painel de atualização só oferece transições válidas', async ({ page }) => {

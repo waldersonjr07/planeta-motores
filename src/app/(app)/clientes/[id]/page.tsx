@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Botao } from '@/componentes/botao'
+import { Voltar } from '@/componentes/voltar'
 import { formatarData } from '@/lib/datas'
 import {
   acaoDefinirAtivoCliente,
@@ -23,6 +24,10 @@ export default async function FichaCliente({
 
   return (
     <section className="flex flex-col gap-6">
+      <div className="flex justify-end">
+        <Voltar href="/clientes" texto="Voltar para clientes" />
+      </div>
+
       <header className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold">{cliente.nome}</h1>

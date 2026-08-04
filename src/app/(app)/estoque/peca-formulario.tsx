@@ -44,9 +44,10 @@ export function FormularioPeca() {
         Controla saldo em estoque
       </label>
       <Botao type="submit" disabled={pendente}>
-        {pendente ? 'Salvando…' : 'Adicionar peça'}
+        {pendente ? 'Salvando…' : 'Cadastrar peça'}
       </Botao>
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
+      {resultado?.ok && <p className="text-sm text-green-700">Peça cadastrada.</p>}
     </form>
   )
 }

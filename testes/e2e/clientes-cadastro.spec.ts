@@ -41,6 +41,18 @@ test('adiciona equipamento na ficha do cliente', async ({ page }) => {
   await expect(page.getByText('Roçadeira Stihl FS 220 (2T)')).toBeVisible()
 })
 
+test('o botão de voltar leva à lista de clientes', async ({ page }) => {
+  await page.getByRole('link', { name: 'Novo cliente' }).click()
+  await page.getByLabel('Nome').fill('Marcos Andrade')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+  await expect(page.getByRole('heading', { name: 'Marcos Andrade' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Voltar para clientes' }).click()
+
+  await expect(page).toHaveURL(/\/clientes$/)
+  await expect(page.getByRole('heading', { name: 'Clientes' })).toBeVisible()
+})
+
 test('inativa o cliente e ele sai da lista', async ({ page }) => {
   await page.getByRole('link', { name: 'Novo cliente' }).click()
   await page.getByLabel('Nome').fill('Marcos Andrade')

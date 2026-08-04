@@ -1,8 +1,9 @@
 import Link from 'next/link'
 
+// Peças não ficam aqui: são cadastradas e acompanhadas na tela de Estoque, que
+// é onde saldo, mínimo e movimentação fazem sentido juntos.
 const ABAS = [
   { href: '/catalogo/servicos', texto: 'Serviços' },
-  { href: '/catalogo/pecas', texto: 'Peças' },
   { href: '/catalogo/fornecedores', texto: 'Fornecedores' },
 ]
 

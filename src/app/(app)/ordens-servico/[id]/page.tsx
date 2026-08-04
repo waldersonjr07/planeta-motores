@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { formatarDataHora } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
+import { Voltar } from '@/componentes/voltar'
 import { hoje } from '@/lib/periodo'
 import { listarPecas } from '@/modulos/catalogo/pecas-consultas'
 import { listarServicos } from '@/modulos/catalogo/servicos-consultas'
@@ -62,6 +63,10 @@ export default async function FichaOs({
 
   return (
     <section className="flex flex-col gap-5">
+      <div className="flex justify-end">
+        <Voltar href="/ordens-servico" texto="Voltar para ordens de serviço" />
+      </div>
+
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
           <div className="flex items-center gap-3">

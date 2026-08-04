@@ -28,6 +28,9 @@ export function FormularioAjuste({ pecas }: { pecas: Peca[] }) {
           <select
             name="pecaId"
             required
+            // Rótulo próprio: na mesma tela existe "Nome da peça" no cadastro,
+            // e "Peça" sozinho ficaria ambíguo.
+            aria-label="Peça do ajuste"
             value={pecaId}
             onChange={(evento) => {
               setPecaId(evento.target.value)

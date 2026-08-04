@@ -9,6 +9,7 @@ export type SaldoPeca = {
   unidade: string
   controlaSaldo: boolean
   quantidadeMinima: number
+  precoVendaCentavos: number
   saldo: number
   abaixoDoMinimo: boolean
 }
@@ -32,6 +33,7 @@ export async function listarSaldos(): Promise<SaldoPeca[]> {
       unidade: pecas.unidade,
       controlaSaldo: pecas.controlaSaldo,
       quantidadeMinima: pecas.quantidadeMinima,
+      precoVendaCentavos: pecas.precoVendaCentavos,
       saldo: SOMA_SALDO,
     })
     .from(pecas)

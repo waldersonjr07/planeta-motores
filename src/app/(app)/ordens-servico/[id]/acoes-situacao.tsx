@@ -6,10 +6,12 @@ import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoMudarSituacao } from '@/modulos/os/acoes'
 import { SITUACOES, TRANSICOES, proximaAcao, type SituacaoOs } from '@/modulos/os/situacoes'
 
-/** Transições que pedem uma justificativa antes de acontecer. */
+/**
+ * Transições que pedem justificativa antes de acontecer. O cancelamento saiu
+ * daqui: a observação opcional do painel cobre quem quiser registrar o motivo.
+ */
 const PEDE_MOTIVO: Partial<Record<SituacaoOs, string>> = {
   recusado: 'Por que o cliente recusou?',
-  cancelado: 'Por que a OS está sendo cancelada?',
 }
 
 export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: SituacaoOs }) {

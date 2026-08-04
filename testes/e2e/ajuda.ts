@@ -57,7 +57,7 @@ export async function lancarAjuste(
   quantidade: string,
   motivo?: string,
 ): Promise<void> {
-  await page.getByLabel('Peça').selectOption({ label: peca })
+  await page.getByLabel('Peça do ajuste').selectOption({ label: peca })
   await page.getByLabel('Quantidade do ajuste').fill(quantidade)
   if (motivo) await page.getByLabel('Motivo (opcional)').fill(motivo)
 
