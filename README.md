@@ -56,10 +56,18 @@ no repositório é a alternativa para máquinas com Docker.
 
 ### Aplicação
 
+Para o dia a dia, um comando só — ele confere o banco, sobe se estiver parado,
+limpa sobra de build de produção e inicia a aplicação:
+
+```powershell
+.\scripts\iniciar.ps1     # http://localhost:3000
+```
+
+Na primeira vez, ou depois de trocar de versão:
+
 ```powershell
 npm install
 npm run banco:aplicar     # aplica as migrações
-npm run dev               # http://localhost:3000
 ```
 
 Acesso criado: **lucilene@planetamotores.com.br** / senha `planeta2026`.
