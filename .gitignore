@@ -15,6 +15,7 @@ build/
 
 # Next.js
 next-env.d.ts
+.next-dev.log
 .tsbuildinfo
 *.tsbuildinfo
 
