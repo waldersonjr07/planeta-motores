@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
 import { fornecedores, pecas } from '../../src/db/schema'
-import { prepararSessao } from './ajuda'
+import { lancarAjuste, prepararSessao } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
@@ -19,35 +19,41 @@ test('ajuste move o saldo e a peça sai da lista de reposição', async ({ page 
   await page.goto('/estoque')
   await expect(page.getByText('1 peça precisa de reposição')).toBeVisible()
 
-  await page.getByLabel('Peça').selectOption({ label: 'Óleo 2 tempos (L)' })
-  await page.getByLabel('Quantidade do ajuste').fill('10')
-  await page.getByLabel('Motivo').fill('Inventário inicial')
-  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
+  await lancarAjuste(page, 'Óleo 2 tempos (L)', '10', 'Inventário inicial')
 
   await expect(page.getByText('Ajuste lançado.')).toBeVisible()
   await expect(page.getByText('precisa de reposição')).toHaveCount(0)
 })
 
-test('ajuste sem motivo é recusado pelo servidor', async ({ page }) => {
+test('a confirmação mostra o saldo antes e depois, e dá para cancelar', async ({ page }) => {
   await page.goto('/estoque')
   await page.getByLabel('Peça').selectOption({ label: 'Óleo 2 tempos (L)' })
-  await page.getByLabel('Quantidade do ajuste').fill('5')
-  // Sem desligar o `required`, o navegador barra o envio e a regra do servidor
-  // nunca é exercitada.
-  await page.getByLabel('Motivo').evaluate((campo: HTMLInputElement) => {
-    campo.required = false
-  })
+  await page.getByLabel('Quantidade do ajuste').fill('10')
   await page.getByRole('button', { name: 'Lançar ajuste' }).click()
 
-  await expect(page.getByText('Informe o motivo do ajuste.')).toBeVisible()
+  await expect(page.getByText('Confirmar ajuste?')).toBeVisible()
+  await expect(page.getByText('passa de 0 para')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Cancelar' }).click()
+
+  await expect(page.getByText('Confirmar ajuste?')).toHaveCount(0)
+  await expect(page.getByText('Ajuste lançado.')).toHaveCount(0)
+})
+
+test('ajuste sem motivo é aceito depois da confirmação', async ({ page }) => {
+  await page.goto('/estoque')
+
+  await lancarAjuste(page, 'Óleo 2 tempos (L)', '5')
+
+  await expect(page.getByText('Ajuste lançado.')).toBeVisible()
+  const linha = page.getByRole('row').filter({ hasText: 'Óleo 2 tempos' })
+  await expect(linha.getByRole('cell', { name: '5', exact: true })).toBeVisible()
 })
 
 test('baixa por ajuste negativo deixa o saldo negativo em destaque', async ({ page }) => {
   await page.goto('/estoque')
-  await page.getByLabel('Peça').selectOption({ label: 'Óleo 2 tempos (L)' })
-  await page.getByLabel('Quantidade do ajuste').fill('-3')
-  await page.getByLabel('Motivo').fill('Perda no galpão')
-  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
+
+  await lancarAjuste(page, 'Óleo 2 tempos (L)', '-3', 'Perda no galpão')
 
   const linha = page.getByRole('row').filter({ hasText: 'Óleo 2 tempos' })
   await expect(linha.getByRole('cell', { name: '-3', exact: true })).toBeVisible()

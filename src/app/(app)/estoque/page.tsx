@@ -75,13 +75,14 @@ export default async function PaginaEstoque() {
         <h2 className="font-semibold">Ajuste de inventário</h2>
         <p className="text-sm text-gray-600">
           O saldo é a soma dos movimentos e nunca é editado direto. Para corrigir, lance um
-          ajuste com o motivo — assim dá para saber depois por que o número mudou.
+          ajuste — preencher o motivo é opcional, mas é o que explica o número lá na frente.
         </p>
         <FormularioAjuste
           pecas={saldos.map((peca) => ({
             id: peca.id,
             nome: peca.nome,
             unidade: peca.unidade,
+            saldo: peca.saldo,
           }))}
         />
       </div>

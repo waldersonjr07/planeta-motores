@@ -27,3 +27,41 @@ export async function prepararSessao(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/\/ordens-servico$/)
 }
+
+/**
+ * Muda a situação pelo botão "Atualização da OS": abre o painel, escolhe o
+ * destino e, quando a transição pede justificativa, preenche e confirma.
+ */
+export async function mudarSituacaoNaTela(
+  page: Page,
+  situacao: string,
+  motivo?: string,
+): Promise<void> {
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+  // O rótulo do próximo passo recomendado ganha um sufixo; casamos pelo início.
+  await page.getByRole('button', { name: new RegExp(`^${situacao}`) }).click()
+
+  if (motivo !== undefined) {
+    await page.getByRole('textbox', { name: /^Por que/ }).fill(motivo)
+    await page.getByRole('button', { name: new RegExp(`^Confirmar: ${situacao}`) }).click()
+  }
+
+  // O painel fecha sozinho quando a situação muda.
+  await expect(page.getByText('Mudar para')).toHaveCount(0)
+}
+
+/** Lança ajuste de estoque passando pela tela de confirmação. */
+export async function lancarAjuste(
+  page: Page,
+  peca: string,
+  quantidade: string,
+  motivo?: string,
+): Promise<void> {
+  await page.getByLabel('Peça').selectOption({ label: peca })
+  await page.getByLabel('Quantidade do ajuste').fill(quantidade)
+  if (motivo) await page.getByLabel('Motivo (opcional)').fill(motivo)
+
+  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
+  await expect(page.getByText('Confirmar ajuste?')).toBeVisible()
+  await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+}

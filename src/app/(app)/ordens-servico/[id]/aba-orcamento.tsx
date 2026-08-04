@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { formatarReais } from '@/lib/dinheiro'
@@ -40,6 +40,7 @@ export function AbaOrcamento({
     acaoDefinirDesconto,
     null,
   )
+  const [itemLivre, setItemLivre] = useState(false)
 
   return (
     <div className="flex flex-col gap-4">
@@ -120,13 +121,16 @@ export function AbaOrcamento({
             <input type="hidden" name="osId" value={osId} />
 
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-700">Item do catálogo</span>
+              <span className="text-gray-700">Item</span>
               <select
                 name="item"
                 required
+                onChange={(evento) => setItemLivre(evento.target.value === 'outros')}
                 className="w-72 rounded border border-gray-300 px-3 py-2 text-sm"
               >
                 <option value="">Selecione…</option>
+                {/* Fora dos grupos do catálogo de propósito: não é item de tabela. */}
+                <option value="outros">Outros (digitar)</option>
                 <optgroup label="Serviços">
                   {opcoes.servicos.map((opcao) => (
                     <option key={opcao.valor} value={opcao.valor}>
@@ -144,6 +148,32 @@ export function AbaOrcamento({
               </select>
             </label>
 
+            {itemLivre && (
+              <>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-gray-700">Descrição</span>
+                  <input
+                    name="descricaoLivre"
+                    required
+                    placeholder="Mão de obra de desmontagem, solda, busca…"
+                    className="w-80 rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-gray-700">Cobrar como</span>
+                  <select
+                    name="tipoLivre"
+                    defaultValue="servico"
+                    className="rounded border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    <option value="servico">Serviço</option>
+                    <option value="peca">Peça</option>
+                  </select>
+                </label>
+              </>
+            )}
+
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-gray-700">Quantidade</span>
               <input
@@ -154,10 +184,13 @@ export function AbaOrcamento({
             </label>
 
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-700">Preço (opcional)</span>
+              <span className="text-gray-700">
+                {itemLivre ? 'Valor unitário' : 'Preço (opcional)'}
+              </span>
               <input
                 name="precoUnitario"
-                placeholder="do catálogo"
+                required={itemLivre}
+                placeholder={itemLivre ? '0,00' : 'do catálogo'}
                 className="w-32 rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </label>
@@ -170,6 +203,13 @@ export function AbaOrcamento({
               <MensagemErro>{resultadoItem.erro}</MensagemErro>
             )}
           </form>
+
+          {itemLivre && (
+            <p className="-mt-2 text-xs text-gray-600">
+              Item digitado vale só para esta OS: não entra no catálogo e, mesmo cobrado
+              como peça, não movimenta o estoque.
+            </p>
+          )}
 
           <form action={salvarDesconto} className="flex items-end gap-3">
             <input type="hidden" name="osId" value={osId} />

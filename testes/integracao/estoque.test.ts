@@ -1,7 +1,12 @@
 import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
 import { pecas } from '../../src/db/schema'
-import { listarReposicao, listarSaldos, saldoDaPeca } from '../../src/modulos/estoque/consultas'
+import {
+  listarMovimentosDaPeca,
+  listarReposicao,
+  listarSaldos,
+  saldoDaPeca,
+} from '../../src/modulos/estoque/consultas'
 import { ajustarEstoque, registrarMovimento } from '../../src/modulos/estoque/operacoes'
 import { limparBanco } from '../ajuda/banco'
 
@@ -36,15 +41,22 @@ test('saldo negativo é permitido, não bloqueado', async () => {
   expect(await saldoDaPeca(peca.id)).toBe(-2)
 })
 
-test('ajuste exige motivo', async () => {
+test('ajuste sem motivo é aceito — a tela confirma no lugar de exigir', async () => {
   const peca = await novaPeca()
 
-  const r = await ajustarEstoque({ pecaId: peca.id, quantidade: 5, motivo: '  ' })
+  const r = await ajustarEstoque({ pecaId: peca.id, quantidade: 5 })
 
-  expect(r.ok).toBe(false)
-  if (r.ok) return
-  expect(r.erro).toBe('Informe o motivo do ajuste.')
-  expect(await saldoDaPeca(peca.id)).toBe(0)
+  expect(r.ok).toBe(true)
+  expect(await saldoDaPeca(peca.id)).toBe(5)
+})
+
+test('o motivo, quando informado, fica gravado no movimento', async () => {
+  const peca = await novaPeca()
+
+  await ajustarEstoque({ pecaId: peca.id, quantidade: 5, motivo: '  Inventário  ' })
+
+  const [movimento] = await listarMovimentosDaPeca(peca.id)
+  expect(movimento.motivo).toBe('Inventário')
 })
 
 test('ajuste move o saldo nos dois sentidos', async () => {
@@ -62,6 +74,8 @@ test('ajuste de quantidade zero é recusado', async () => {
   const r = await ajustarEstoque({ pecaId: peca.id, quantidade: 0, motivo: 'Nada' })
 
   expect(r.ok).toBe(false)
+  if (r.ok) return
+  expect(r.erro).toBe('Informe uma quantidade diferente de zero.')
 })
 
 test('a reposição traz só quem controla saldo e está no mínimo ou abaixo', async () => {

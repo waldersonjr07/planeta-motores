@@ -16,12 +16,28 @@ export const entradaOs = z.object({
 
 export type EntradaOs = z.infer<typeof entradaOs>
 
-export const entradaItemOs = z.object({
-  tipo: z.enum(['peca', 'servico']),
-  referenciaId: z.string().uuid('Selecione o item'),
-  quantidade: z.number().positive('A quantidade precisa ser maior que zero'),
-  /** Quando informado, tem precedência sobre o preço do catálogo. */
-  precoUnitarioCentavos: z.number().int().min(0).optional(),
-})
+/**
+ * Um item vem do catálogo (`referenciaId`) ou é digitado na hora (`descricao`).
+ * O item digitado existe porque a mão de obra da oficina tem valor variado e
+ * nem tudo cabe numa tabela de preço — sem ele, a Lucilene teria de poluir o
+ * catálogo com serviço que só serve para uma OS.
+ */
+export const entradaItemOs = z
+  .object({
+    tipo: z.enum(['peca', 'servico']),
+    referenciaId: z.string().uuid('Selecione o item').optional(),
+    descricao: z.string().trim().min(1, 'Descreva o item').optional(),
+    quantidade: z.number().positive('A quantidade precisa ser maior que zero'),
+    /** No item do catálogo é opcional (herda o preço); no digitado é obrigatório. */
+    precoUnitarioCentavos: z.number().int().min(0).optional(),
+  })
+  .refine((dados) => dados.referenciaId || dados.descricao, {
+    message: 'Selecione um item do catálogo ou descreva o item',
+    path: ['descricao'],
+  })
+  .refine(
+    (dados) => dados.referenciaId || dados.precoUnitarioCentavos !== undefined,
+    { message: 'Informe o valor do item', path: ['precoUnitarioCentavos'] },
+  )
 
 export type EntradaItemOs = z.infer<typeof entradaItemOs>

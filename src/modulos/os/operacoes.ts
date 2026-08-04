@@ -99,9 +99,17 @@ export async function adicionarItem(
   // O nome e o preço são copiados agora: renomear no catálogo depois não pode
   // alterar orçamento já lançado.
   let descricao: string
-  let precoCatalogo: number
+  let precoCatalogo: number | undefined
 
-  if (entrada.tipo === 'servico') {
+  if (!entrada.referenciaId) {
+    // Item digitado na hora: não referencia catálogo nenhum, e por isso também
+    // não movimenta estoque quando a OS é concluída.
+    if (!entrada.descricao) return falha('Descreva o item.')
+    if (entrada.precoUnitarioCentavos === undefined) {
+      return falha('Informe o valor do item.')
+    }
+    descricao = entrada.descricao
+  } else if (entrada.tipo === 'servico') {
     const [servico] = await db
       .select()
       .from(servicos)
@@ -126,11 +134,11 @@ export async function adicionarItem(
     .values({
       osId,
       tipo: entrada.tipo,
-      pecaId: entrada.tipo === 'peca' ? entrada.referenciaId : null,
-      servicoId: entrada.tipo === 'servico' ? entrada.referenciaId : null,
+      pecaId: entrada.tipo === 'peca' ? (entrada.referenciaId ?? null) : null,
+      servicoId: entrada.tipo === 'servico' ? (entrada.referenciaId ?? null) : null,
       descricao,
       quantidade: entrada.quantidade.toFixed(3),
-      precoUnitarioCentavos: entrada.precoUnitarioCentavos ?? precoCatalogo,
+      precoUnitarioCentavos: entrada.precoUnitarioCentavos ?? precoCatalogo ?? 0,
     })
     .returning({ id: osItens.id })
 

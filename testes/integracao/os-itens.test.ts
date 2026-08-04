@@ -2,10 +2,12 @@ import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
 import { ordensServico, servicos } from '../../src/db/schema'
+import { saldoDaPeca } from '../../src/modulos/estoque/consultas'
 import { listarOs, obterOs } from '../../src/modulos/os/consultas'
 import {
   adicionarItem,
   definirDesconto,
+  mudarSituacao,
   removerItem,
 } from '../../src/modulos/os/operacoes'
 import { limparBanco } from '../ajuda/banco'
@@ -86,6 +88,75 @@ test('OS entregue não aceita item novo', async () => {
   expect(r.ok).toBe(false)
   if (r.ok) return
   expect(r.erro).toBe('Esta ordem de serviço está encerrada e não aceita alteração de itens.')
+})
+
+test('item digitado entra sem catálogo, com descrição e valor informados', async () => {
+  const { osId } = await cenarioOs()
+
+  const r = await adicionarItem(osId, {
+    tipo: 'servico',
+    descricao: 'Mão de obra de desmontagem',
+    quantidade: 1,
+    precoUnitarioCentavos: 15000,
+  })
+
+  expect(r.ok).toBe(true)
+  const os = await obterOs(osId)
+  expect(os?.itens[0].descricao).toBe('Mão de obra de desmontagem')
+  expect(os?.itens[0].precoUnitarioCentavos).toBe(15000)
+  expect(os?.itens[0].servicoId).toBeNull()
+  expect(os?.totais.servicosCentavos).toBe(15000)
+})
+
+test('item digitado como peça não referencia peça do catálogo', async () => {
+  const { osId } = await cenarioOs()
+
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    descricao: 'Parafuso avulso',
+    quantidade: 4,
+    precoUnitarioCentavos: 250,
+  })
+
+  const os = await obterOs(osId)
+  expect(os?.itens[0].pecaId).toBeNull()
+  expect(os?.totais.pecasCentavos).toBe(1000)
+})
+
+test('item digitado sem valor é recusado', async () => {
+  const { osId } = await cenarioOs()
+
+  const r = await adicionarItem(osId, {
+    tipo: 'servico',
+    descricao: 'Serviço sem preço',
+    quantidade: 1,
+  })
+
+  expect(r.ok).toBe(false)
+  if (r.ok) return
+  expect(r.erro).toBe('Informe o valor do item.')
+})
+
+test('item digitado como peça não movimenta estoque na conclusão', async () => {
+  const { osId, peca } = await cenarioOs()
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    descricao: 'Parafuso avulso',
+    quantidade: 4,
+    precoUnitarioCentavos: 250,
+  })
+  for (const passo of [
+    'em_diagnostico',
+    'orcamento_enviado',
+    'aprovado',
+    'em_execucao',
+    'pronto',
+  ] as const) {
+    await mudarSituacao(osId, passo)
+  }
+
+  // Item sem peça de catálogo não tem saldo a baixar; a do cenário fica intacta.
+  expect(await saldoDaPeca(peca.id)).toBe(0)
 })
 
 test('quantidade zero ou negativa é recusada', async () => {

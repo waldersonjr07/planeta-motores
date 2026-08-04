@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
 import { clientes, equipamentos, servicos } from '../../src/db/schema'
-import { prepararSessao } from './ajuda'
+import { mudarSituacaoNaTela, prepararSessao } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
@@ -30,9 +30,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
 
   await page.getByRole('link', { name: /^Orçamento/ }).click()
-  await page
-    .getByLabel('Item do catálogo')
-    .selectOption({ label: 'Retífica de cilindro — R$ 210,00' })
+  await page.getByLabel('Item').selectOption({ label: 'Retífica de cilindro — R$ 210,00' })
   await page.getByRole('button', { name: 'Adicionar item' }).click()
   await expect(page.getByText('Total R$ 210,00')).toBeVisible()
 })
@@ -98,11 +96,37 @@ test('a ficha oferece os PDFs e a mensagem de WhatsApp', async ({ page }) => {
   await expect(aviso).toHaveAttribute('href', /^https:\/\/wa\.me\/5511987654321\?text=/)
 })
 
+test('a rota de documento entrega um PDF de verdade', async ({ page }) => {
+  const href = await page
+    .getByRole('link', { name: 'PDF do orçamento' })
+    .getAttribute('href')
+
+  // Pela rota HTTP, com a sessão da página: o teste de integração exercita só
+  // a geração, e a rota tem guarda de sessão e cabeçalhos próprios.
+  const resposta = await page.request.get(href!)
+
+  expect(resposta.status()).toBe(200)
+  expect(resposta.headers()['content-type']).toBe('application/pdf')
+  const corpo = await resposta.body()
+  expect(corpo.subarray(0, 5).toString()).toBe('%PDF-')
+})
+
+test('documento sem sessão é recusado', async ({ page, request }) => {
+  const href = await page
+    .getByRole('link', { name: 'PDF do recibo' })
+    .getAttribute('href')
+
+  // `request` do contexto de teste não carrega os cookies da página.
+  const resposta = await request.get(`http://localhost:3100${href}`)
+
+  expect(resposta.status()).toBe(401)
+})
+
 test('o painel mostra as pendências e o valor a receber', async ({ page }) => {
   // Só vira pendência a partir de "orçamento enviado": em "recebido" não há
   // nada esperando resposta de ninguém.
-  await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
-  await page.getByRole('button', { name: 'Enviar orçamento' }).click()
+  await mudarSituacaoNaTela(page, 'Em diagnóstico')
+  await mudarSituacaoNaTela(page, 'Orçamento enviado')
 
   await page.getByRole('link', { name: /^Pagamentos/ }).click()
   await page.getByLabel('Valor').fill('50,00')

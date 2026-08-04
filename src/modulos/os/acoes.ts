@@ -67,13 +67,26 @@ export async function acaoAdicionarItem(
     precoUnitarioCentavos = centavos
   }
 
-  const par = String(formulario.get('item') ?? '').split(':')
-  const analise = entradaItemOs.safeParse({
-    tipo: par[0],
-    referenciaId: par[1] ?? '',
-    quantidade,
-    precoUnitarioCentavos,
-  })
+  const selecionado = String(formulario.get('item') ?? '')
+
+  // "outros" é o item digitado na hora: sem catálogo, com descrição e valor
+  // informados pela Lucilene.
+  const entrada =
+    selecionado === 'outros'
+      ? {
+          tipo: String(formulario.get('tipoLivre') ?? 'servico'),
+          descricao: String(formulario.get('descricaoLivre') ?? ''),
+          quantidade,
+          precoUnitarioCentavos,
+        }
+      : {
+          tipo: selecionado.split(':')[0],
+          referenciaId: selecionado.split(':')[1] ?? '',
+          quantidade,
+          precoUnitarioCentavos,
+        }
+
+  const analise = entradaItemOs.safeParse(entrada)
   if (!analise.success) return falhaDeValidacao(analise.error)
 
   const r = await adicionarItem(osId, analise.data)

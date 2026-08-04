@@ -10,7 +10,7 @@ export type EntradaMovimento = {
   quantidade: number
   referenciaTipo?: string
   referenciaId?: string
-  motivo?: string
+  motivo?: string | null
   usuarioId?: string
 }
 
@@ -37,10 +37,9 @@ export async function registrarMovimento(
 export async function ajustarEstoque(entrada: {
   pecaId: string
   quantidade: number
-  motivo: string
+  /** Opcional: a tela confirma o lançamento no lugar de exigir justificativa. */
+  motivo?: string
 }): Promise<Resultado<null>> {
-  // Ajuste sem explicação é como o controle se perde de novo.
-  if (!entrada.motivo?.trim()) return falha('Informe o motivo do ajuste.')
   if (!Number.isFinite(entrada.quantidade) || entrada.quantidade === 0) {
     return falha('Informe uma quantidade diferente de zero.')
   }
@@ -49,7 +48,7 @@ export async function ajustarEstoque(entrada: {
     pecaId: entrada.pecaId,
     tipo: 'ajuste',
     quantidade: entrada.quantidade,
-    motivo: entrada.motivo.trim(),
+    motivo: entrada.motivo?.trim() || null,
   })
   return sucesso(null)
 }

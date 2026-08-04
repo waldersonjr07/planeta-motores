@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
 import { clientes, equipamentos, pecas, servicos } from '../../src/db/schema'
-import { prepararSessao } from './ajuda'
+import { lancarAjuste, mudarSituacaoNaTela, prepararSessao } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
@@ -28,10 +28,7 @@ test.beforeEach(async ({ page }) => {
 test('percorre a OS do recebimento até a entrega e baixa o estoque', async ({ page }) => {
   // Entra estoque para a peça, para a baixa ser visível no fim.
   await page.goto('/estoque')
-  await page.getByLabel('Peça').selectOption({ label: 'Kit cilindro 40mm (un)' })
-  await page.getByLabel('Quantidade do ajuste').fill('5')
-  await page.getByLabel('Motivo').fill('Inventário inicial')
-  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
+  await lancarAjuste(page, 'Kit cilindro 40mm (un)', '5', 'Inventário inicial')
   await expect(page.getByText('Ajuste lançado.')).toBeVisible()
 
   // Abre a OS.
@@ -44,41 +41,35 @@ test('percorre a OS do recebimento até a entrega e baixa o estoque', async ({ p
   await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
 
   await expect(page.getByRole('heading', { name: /^OS \d{4}-0001$/ })).toBeVisible()
-  await expect(page.getByText('Recebido')).toBeVisible()
 
   // Diagnóstico.
-  await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click()
+  await mudarSituacaoNaTela(page, 'Em diagnóstico')
   await page.getByLabel('Diagnóstico do Ivan').fill('Cilindro riscado')
   await page.getByRole('button', { name: 'Salvar diagnóstico' }).click()
   await expect(page.getByText('Diagnóstico salvo.')).toBeVisible()
 
-  // Orçamento: um serviço e uma peça.
+  // Orçamento: um serviço e uma peça do catálogo.
   await page.getByRole('link', { name: /^Orçamento/ }).click()
-  // Rótulo exato: confere de quebra que a opção mostra o preço do catálogo.
-  await page
-    .getByLabel('Item do catálogo')
-    .selectOption({ label: 'Retífica de cilindro — R$ 210,00' })
+  await page.getByLabel('Item').selectOption({ label: 'Retífica de cilindro — R$ 210,00' })
   await page.getByRole('button', { name: 'Adicionar item' }).click()
   await expect(page.getByRole('cell', { name: 'Retífica de cilindro' })).toBeVisible()
 
-  await page
-    .getByLabel('Item do catálogo')
-    .selectOption({ label: 'Kit cilindro 40mm — R$ 230,00' })
+  await page.getByLabel('Item').selectOption({ label: 'Kit cilindro 40mm — R$ 230,00' })
   await page.getByLabel('Quantidade').fill('2')
   await page.getByRole('button', { name: 'Adicionar item' }).click()
 
   // 21.000 + 2 × 23.000 = 67.000 centavos. O valor aparece no cabeçalho e na
-  // soma do orçamento; conferimos o do cabeçalho, que é o que fica sempre à vista.
+  // soma do orçamento; conferimos o do cabeçalho, que fica sempre à vista.
   await expect(page.getByText('Total R$ 670,00')).toBeVisible()
 
   // Envia, aprova, executa, conclui e entrega.
-  await page.getByRole('button', { name: 'Enviar orçamento' }).click()
+  await mudarSituacaoNaTela(page, 'Orçamento enviado')
   await expect(page.getByText('orçamento versão 1')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Registrar aprovação' }).click()
-  await page.getByRole('button', { name: 'Iniciar execução' }).click()
-  await page.getByRole('button', { name: 'Concluir serviço' }).click()
-  await page.getByRole('button', { name: 'Entregar' }).click()
+  await mudarSituacaoNaTela(page, 'Aprovado')
+  await mudarSituacaoNaTela(page, 'Em execução')
+  await mudarSituacaoNaTela(page, 'Pronto')
+  await mudarSituacaoNaTela(page, 'Entregue')
 
   await expect(page.getByText('Ordem de serviço encerrada.')).toBeVisible()
 
@@ -92,6 +83,64 @@ test('percorre a OS do recebimento até a entrega e baixa o estoque', async ({ p
   await page.goto('/estoque')
   const linha = page.getByRole('row').filter({ hasText: 'Kit cilindro 40mm' })
   await expect(linha.getByRole('cell', { name: '3', exact: true })).toBeVisible()
+})
+
+test('item digitado em "Outros" entra no orçamento com valor livre', async ({ page }) => {
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await page.getByRole('link', { name: /^Orçamento/ }).click()
+  await page.getByLabel('Item').selectOption('outros')
+
+  await page.getByLabel('Descrição').fill('Mão de obra de desmontagem')
+  await page.getByLabel('Valor unitário').fill('150,00')
+  await page.getByRole('button', { name: 'Adicionar item' }).click()
+
+  await expect(page.getByRole('cell', { name: 'Mão de obra de desmontagem' })).toBeVisible()
+  await expect(page.getByText('Total R$ 150,00')).toBeVisible()
+
+  // O catálogo continua intacto: o item digitado vale só para esta OS.
+  await page.goto('/catalogo/servicos')
+  await expect(page.getByText('Mão de obra de desmontagem')).toHaveCount(0)
+  await expect(page.getByRole('cell', { name: 'Retífica de cilindro' })).toBeVisible()
+})
+
+test('item digitado cobrado como peça não movimenta o estoque', async ({ page }) => {
+  await page.goto('/estoque')
+  await lancarAjuste(page, 'Kit cilindro 40mm (un)', '5')
+
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await page.getByRole('link', { name: /^Orçamento/ }).click()
+  await page.getByLabel('Item').selectOption('outros')
+  await page.getByLabel('Descrição').fill('Parafuso avulso')
+  await page.getByLabel('Cobrar como').selectOption('peca')
+  await page.getByLabel('Valor unitário').fill('2,50')
+  await page.getByRole('button', { name: 'Adicionar item' }).click()
+  await expect(page.getByRole('cell', { name: 'Parafuso avulso' })).toBeVisible()
+
+  for (const passo of [
+    'Em diagnóstico',
+    'Orçamento enviado',
+    'Aprovado',
+    'Em execução',
+    'Pronto',
+  ]) {
+    await mudarSituacaoNaTela(page, passo)
+  }
+
+  await page.goto('/estoque')
+  const linha = page.getByRole('row').filter({ hasText: 'Kit cilindro 40mm' })
+  await expect(linha.getByRole('cell', { name: '5', exact: true })).toBeVisible()
 })
 
 test('a lista filtra por situação e encontra pela busca', async ({ page }) => {
@@ -117,7 +166,7 @@ test('a lista filtra por situação e encontra pela busca', async ({ page }) => 
   await expect(page.getByRole('cell', { name: 'Marcos Andrade' })).toBeVisible()
 })
 
-test('pular etapa é recusado com mensagem', async ({ page }) => {
+test('cancelar pede motivo e encerra a OS', async ({ page }) => {
   await page.goto('/ordens-servico/nova')
   await page
     .getByLabel('Cliente e equipamento')
@@ -125,11 +174,27 @@ test('pular etapa é recusado com mensagem', async ({ page }) => {
   await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
   await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
 
-  // "Cancelado" é a alternativa oferecida em Recebido; a transição proibida
-  // que queremos exercitar é a de item em OS encerrada.
-  await page.getByRole('button', { name: 'Cancelado' }).click()
-  await page.getByLabel('Por que a OS está sendo cancelada?').fill('Aberta por engano')
-  await page.getByRole('button', { name: 'Cancelado' }).click()
+  await mudarSituacaoNaTela(page, 'Cancelado', 'Aberta por engano')
 
   await expect(page.getByText('Ordem de serviço encerrada.')).toBeVisible()
+  await page.getByRole('link', { name: /^Histórico/ }).click()
+  await expect(page.getByText('Aberta por engano')).toBeVisible()
+})
+
+test('o painel de atualização só oferece transições válidas', async ({ page }) => {
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+
+  // De "Recebido" só se vai para diagnóstico ou cancelamento: pular etapa
+  // deixa de ser possível na tela, não só recusado no servidor.
+  await expect(page.getByRole('button', { name: /^Em diagnóstico/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Cancelado/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pronto/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Entregue/ })).toHaveCount(0)
 })
