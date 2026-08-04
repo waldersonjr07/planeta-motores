@@ -2,7 +2,9 @@
 
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
+import { Campo, CampoSelecao, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
+import { Vazio } from '@/componentes/pagina'
 import { acaoEnviarFoto, acaoRemoverFoto } from '@/modulos/os/acoes'
 import { MOMENTOS, type MomentoFoto } from '@/modulos/os/momentos'
 
@@ -16,77 +18,74 @@ export function AbaFotos({ osId, fotos }: { osId: string; fotos: Foto[] }) {
   const [resultado, enviar, pendente] = useActionState(acaoEnviarFoto, null)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {fotos.length === 0 ? (
-        <p className="text-sm text-gray-600">Nenhuma foto anexada.</p>
+        <Vazio>
+          Nenhuma foto anexada. Registrar o estado na chegada evita discussão depois.
+        </Vazio>
       ) : (
-        <ul className="flex flex-wrap gap-4">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
           {fotos.map((foto) => (
-            <li key={foto.id} className="w-56 rounded border border-gray-200 p-2">
+            <li
+              key={foto.id}
+              className="overflow-hidden rounded-lg border border-borda bg-superficie"
+            >
               {/* Rota autenticada, não arquivo público. */}
               <img
                 src={`/api/fotos/${foto.id}`}
                 alt={foto.legenda ?? MOMENTOS[foto.momento]}
-                className="h-40 w-full rounded object-cover"
+                className="h-40 w-full bg-realce object-cover"
               />
-              <p className="mt-2 text-xs text-gray-600">
-                {MOMENTOS[foto.momento]}
-                {foto.legenda && ` · ${foto.legenda}`}
-              </p>
-              <form action={acaoRemoverFoto} className="mt-2">
-                <input type="hidden" name="fotoId" value={foto.id} />
-                <input type="hidden" name="osId" value={osId} />
-                <Botao variante="secundario" type="submit">
-                  Remover
-                </Botao>
-              </form>
+              <div className="flex items-center justify-between gap-2 px-3 py-2">
+                <p className="min-w-0 truncate text-xs text-tinta-suave">
+                  {MOMENTOS[foto.momento]}
+                  {foto.legenda && ` · ${foto.legenda}`}
+                </p>
+                <form action={acaoRemoverFoto}>
+                  <input type="hidden" name="fotoId" value={foto.id} />
+                  <input type="hidden" name="osId" value={osId} />
+                  <Botao variante="discreto" type="submit">
+                    Remover
+                  </Botao>
+                </form>
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      <form
-        action={enviar}
-        className="flex flex-wrap items-end gap-3 rounded border border-gray-200 p-4"
-      >
+      <form action={enviar} className="flex flex-col gap-3 border-t border-borda pt-5">
         <input type="hidden" name="osId" value={osId} />
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Foto</span>
-          <input
-            type="file"
-            name="arquivo"
-            accept="image/jpeg,image/png,image/webp"
-            required
-            className="text-sm"
+        <GradeFormulario>
+          <label className="col-span-4 flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+              Foto
+            </span>
+            <input
+              type="file"
+              name="arquivo"
+              accept="image/jpeg,image/png,image/webp"
+              required
+              className="text-sm file:mr-3 file:rounded-md file:border file:border-borda-forte file:bg-superficie file:px-3 file:py-1.5 file:text-sm"
+            />
+          </label>
+
+          <CampoSelecao
+            rotulo="Momento"
+            nome="momento"
+            className="col-span-3"
+            opcoes={Object.entries(MOMENTOS).map(([valor, texto]) => ({ valor, texto }))}
           />
-        </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Momento</span>
-          <select
-            name="momento"
-            className="rounded border border-gray-300 px-3 py-2 text-sm"
-          >
-            {Object.entries(MOMENTOS).map(([valor, texto]) => (
-              <option key={valor} value={valor}>
-                {texto}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Campo rotulo="Legenda" nome="legenda" className="col-span-3" />
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Legenda</span>
-          <input
-            name="legenda"
-            className="rounded border border-gray-300 px-3 py-2 text-sm"
-          />
-        </label>
-
-        <Botao type="submit" disabled={pendente}>
-          {pendente ? 'Enviando…' : 'Anexar foto'}
-        </Botao>
+          <div className="col-span-2">
+            <Botao type="submit" disabled={pendente} className="w-full">
+              {pendente ? 'Enviando…' : 'Anexar foto'}
+            </Botao>
+          </div>
+        </GradeFormulario>
 
         {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
       </form>

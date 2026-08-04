@@ -19,9 +19,9 @@ export function CampoBusca() {
       <input
         name="busca"
         defaultValue={parametros.get('busca') ?? ''}
-        placeholder="Buscar por nome ou CPF/CNPJ"
+        placeholder="Nome ou CPF/CNPJ"
         aria-label="Buscar cliente"
-        className="w-80 rounded border border-gray-300 px-3 py-2 text-sm"
+        className="w-72 rounded-md border border-borda-forte bg-superficie px-3 py-1.5 text-sm placeholder:text-tinta-fraca"
       />
     </form>
   )

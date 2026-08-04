@@ -29,6 +29,15 @@ export async function prepararSessao(page: Page): Promise<void> {
 }
 
 /**
+ * Bloco de resumo do cabeçalho da OS (total, cobrança, saldo, versão). Os
+ * mesmos valores aparecem nas abas, então asserção sobre eles precisa de
+ * escopo — o rótulo fica no `dt`, e não repetido dentro do valor.
+ */
+export function resumoDaOs(page: Page) {
+  return page.getByRole('group', { name: 'Resumo da OS' })
+}
+
+/**
  * Muda a situação pelo botão "Atualização da OS": abre o painel, escolhe o
  * destino e, quando a transição pede justificativa, preenche e confirma.
  */
@@ -50,18 +59,24 @@ export async function mudarSituacaoNaTela(
   await expect(page.getByText('Mudar para')).toHaveCount(0)
 }
 
-/** Lança ajuste de estoque passando pela tela de confirmação. */
+/**
+ * Lança ajuste de estoque passando pela tela de confirmação. Escopado na
+ * seção porque a tela de Estoque também tem o cadastro de peça, com rótulos
+ * parecidos — o rótulo é escrito para quem usa, e o teste é que se vira.
+ */
 export async function lancarAjuste(
   page: Page,
   peca: string,
   quantidade: string,
   motivo?: string,
 ): Promise<void> {
-  await page.getByLabel('Peça do ajuste').selectOption({ label: peca })
-  await page.getByLabel('Quantidade do ajuste').fill(quantidade)
-  if (motivo) await page.getByLabel('Motivo (opcional)').fill(motivo)
+  const secao = page.getByRole('region', { name: 'Ajuste de inventário' })
 
-  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
-  await expect(page.getByText('Confirmar ajuste?')).toBeVisible()
-  await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+  await secao.getByLabel('Peça').selectOption({ label: peca })
+  await secao.getByLabel('Quantidade').fill(quantidade)
+  if (motivo) await secao.getByLabel('Motivo (opcional)').fill(motivo)
+
+  await secao.getByRole('button', { name: 'Lançar ajuste' }).click()
+  await expect(secao.getByText('Confirmar ajuste?')).toBeVisible()
+  await secao.getByRole('button', { name: 'Confirmar', exact: true }).click()
 }

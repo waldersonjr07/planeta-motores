@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import { CabecalhoPagina, Cartao } from '@/componentes/pagina'
+import { Voltar } from '@/componentes/voltar'
 import { obterCliente } from '@/modulos/clientes/consultas'
 import { FormularioCliente } from '../../formulario'
 
@@ -12,9 +14,16 @@ export default async function PaginaEditarCliente({
   if (!cliente) notFound()
 
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Editar {cliente.nome}</h1>
-      <FormularioCliente cliente={cliente} />
-    </section>
+    <>
+      <div className="flex justify-end">
+        <Voltar href={`/clientes/${id}`} texto="Voltar para a ficha" />
+      </div>
+
+      <CabecalhoPagina titulo={`Editar ${cliente.nome}`} />
+
+      <Cartao>
+        <FormularioCliente cliente={cliente} />
+      </Cartao>
+    </>
   )
 }

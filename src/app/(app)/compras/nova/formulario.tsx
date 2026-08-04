@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
+import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoRegistrarCompra } from '@/modulos/compras/acoes'
 
@@ -22,95 +23,79 @@ export function FormularioCompra({
   const [linhas, setLinhas] = useState([0])
 
   return (
-    <form action={enviar} className="flex max-w-3xl flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Fornecedor</span>
-          <select
-            name="fornecedorId"
-            className="rounded border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="">Não informado</option>
-            {fornecedores.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.texto}
-              </option>
-            ))}
-          </select>
-        </label>
+    <form action={enviar} className="flex flex-col gap-6">
+      <GradeFormulario>
+        <CampoSelecao rotulo="Fornecedor" nome="fornecedorId" className="col-span-4">
+          <option value="">Não informado</option>
+          {fornecedores.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.texto}
+            </option>
+          ))}
+        </CampoSelecao>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Data</span>
-          <input
-            type="date"
-            name="data"
-            required
-            defaultValue={hoje}
-            className="rounded border border-gray-300 px-3 py-2 text-sm"
-          />
-        </label>
+        <Campo
+          rotulo="Data"
+          nome="data"
+          type="date"
+          required
+          defaultValue={hoje}
+          className="col-span-2"
+        />
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">OS que motivou a compra</span>
-          <select name="osId" className="rounded border border-gray-300 px-3 py-2 text-sm">
-            <option value="">Nenhuma (reposição de estoque)</option>
-            {ordens.map((os) => (
-              <option key={os.id} value={os.id}>
-                {os.texto}
-              </option>
-            ))}
-          </select>
-        </label>
+        <CampoSelecao
+          rotulo="OS que motivou a compra"
+          nome="osId"
+          className="col-span-4"
+        >
+          <option value="">Nenhuma (reposição de estoque)</option>
+          {ordens.map((os) => (
+            <option key={os.id} value={os.id}>
+              {os.texto}
+            </option>
+          ))}
+        </CampoSelecao>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-gray-700">Nota / documento</span>
-          <input
-            name="numeroDocumento"
-            className="rounded border border-gray-300 px-3 py-2 text-sm"
-          />
-        </label>
-      </div>
+        <Campo rotulo="Nota / documento" nome="numeroDocumento" className="col-span-2" />
+      </GradeFormulario>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold">Itens</span>
+      <div className="flex flex-col gap-3 border-t border-borda pt-5">
+        <p className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+          Itens da compra
+        </p>
+
         {linhas.map((linha) => (
-          <div key={linha} className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-700">Peça</span>
-              <select
-                name="pecaId"
-                aria-label={`Peça da linha ${linha + 1}`}
-                className="w-72 rounded border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">Selecione…</option>
-                {pecas.map((peca) => (
-                  <option key={peca.id} value={peca.id}>
-                    {peca.texto}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <GradeFormulario key={linha}>
+            <CampoSelecao
+              rotulo="Peça"
+              nome="pecaId"
+              className="col-span-6"
+              aria-label={`Peça da linha ${linha + 1}`}
+            >
+              <option value="">Selecione…</option>
+              {pecas.map((peca) => (
+                <option key={peca.id} value={peca.id}>
+                  {peca.texto}
+                </option>
+              ))}
+            </CampoSelecao>
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-700">Quantidade</span>
-              <input
-                name="quantidade"
-                defaultValue="1"
-                aria-label={`Quantidade da linha ${linha + 1}`}
-                className="w-24 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
+            <Campo
+              rotulo="Quantidade"
+              nome="quantidade"
+              defaultValue="1"
+              className="col-span-3"
+              aria-label={`Quantidade da linha ${linha + 1}`}
+            />
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-700">Custo unitário</span>
-              <input
-                name="custo"
-                placeholder="0,00"
-                aria-label={`Custo unitário da linha ${linha + 1}`}
-                className="w-32 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
+            <Campo
+              rotulo="Custo unitário"
+              nome="custo"
+              placeholder="0,00"
+              className="col-span-3"
+              aria-label={`Custo unitário da linha ${linha + 1}`}
+            />
+          </GradeFormulario>
         ))}
 
         <Botao
@@ -123,14 +108,7 @@ export function FormularioCompra({
         </Botao>
       </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="text-gray-700">Observações</span>
-        <textarea
-          name="observacoes"
-          rows={2}
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
-        />
-      </label>
+      <CampoTexto rotulo="Observações" nome="observacoes" rows={2} />
 
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
 

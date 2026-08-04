@@ -1,10 +1,70 @@
 @import 'tailwindcss';
 
+/*
+ * Paleta de instrumento, não de vitrine: a Lucilene passa o dia aqui, então
+ * nada de cor saturada em área grande. O azul é o único tom forte e fica
+ * reservado para ação; âmbar, vermelho e verde só aparecem quando o número
+ * exige atenção.
+ */
+@theme {
+  --color-tinta: #16202a;
+  --color-tinta-suave: #5b6976;
+  --color-tinta-fraca: #8b97a3;
+
+  --color-fundo: #f6f7f9;
+  --color-superficie: #ffffff;
+  --color-realce: #eef1f5;
+
+  --color-borda: #dde2e8;
+  --color-borda-forte: #c3ccd6;
+
+  --color-acao: #17549a;
+  --color-acao-escura: #113f75;
+  --color-acao-fundo: #eaf1f9;
+
+  --color-atencao: #9a5b06;
+  --color-atencao-fundo: #fdf4e5;
+  --color-atencao-borda: #eccf9c;
+
+  --color-alerta: #a3291f;
+  --color-alerta-fundo: #fdf0ee;
+
+  --color-ok: #1c6b45;
+  --color-ok-fundo: #eef7f2;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
-  background: #ffffff;
-  color: #111827;
+  background: var(--color-fundo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  /*
+   * Algarismos tabulares em todo o sistema. Numa tela cheia de valor, saldo e
+   * número de OS, é o que faz as colunas empilharem alinhadas e permite
+   * comparar de relance em vez de ler dígito a dígito.
+   */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco sempre visível: o cadastro é feito muito no teclado. */
+:focus-visible {
+  outline: 2px solid var(--color-acao);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

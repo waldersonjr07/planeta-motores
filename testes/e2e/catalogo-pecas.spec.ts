@@ -17,13 +17,14 @@ test('a peça é cadastrada e acompanhada na tela de estoque', async ({ page }) 
   await page.goto('/estoque')
   await expect(page.getByText('Nenhuma peça cadastrada.')).toBeVisible()
 
-  await page.getByLabel('Nome da peça').fill('Óleo 2 tempos')
-  await page.getByLabel('Marca').fill('Ipiranga')
-  await page.getByLabel('Unidade').selectOption('L')
-  await page.getByLabel('Preço de venda').fill('38,00')
-  await page.getByLabel('Quantidade mínima').fill('2')
-  await page.getByLabel('Controla saldo em estoque').check()
-  await page.getByRole('button', { name: 'Cadastrar peça' }).click()
+  const cadastro = page.getByRole('region', { name: 'Cadastrar peça' })
+  await cadastro.getByLabel('Nome da peça').fill('Óleo 2 tempos')
+  await cadastro.getByLabel('Marca').fill('Ipiranga')
+  await cadastro.getByLabel('Unidade').selectOption('L')
+  await cadastro.getByLabel('Preço de venda').fill('38,00')
+  await cadastro.getByLabel('Quantidade mínima').fill('2')
+  await cadastro.getByLabel('Controla saldo em estoque').check()
+  await cadastro.getByRole('button', { name: 'Cadastrar peça' }).click()
 
   await expect(page.getByText('Peça cadastrada.')).toBeVisible()
 
@@ -34,8 +35,11 @@ test('a peça é cadastrada e acompanhada na tela de estoque', async ({ page }) 
 
 test('a peça cadastrada no estoque aparece no orçamento da OS', async ({ page }) => {
   await page.goto('/estoque')
-  await page.getByLabel('Nome da peça').fill('Vela NGK')
-  await page.getByLabel('Preço de venda').fill('18,00')
+  await page.getByRole('region', { name: 'Cadastrar peça' }).getByLabel('Nome da peça').fill('Vela NGK')
+  await page
+    .getByRole('region', { name: 'Cadastrar peça' })
+    .getByLabel('Preço de venda')
+    .fill('18,00')
   await page.getByRole('button', { name: 'Cadastrar peça' }).click()
   await expect(page.getByText('Peça cadastrada.')).toBeVisible()
 
@@ -46,7 +50,7 @@ test('a peça cadastrada no estoque aparece no orçamento da OS', async ({ page 
 
 test('remover a peça tira ela da tela de estoque', async ({ page }) => {
   await page.goto('/estoque')
-  await page.getByLabel('Nome da peça').fill('Peça temporária')
+  await page.getByRole('region', { name: 'Cadastrar peça' }).getByLabel('Nome da peça').fill('Peça temporária')
   await page.getByRole('button', { name: 'Cadastrar peça' }).click()
   await expect(page.getByRole('cell', { name: 'Peça temporária' })).toBeVisible()
 

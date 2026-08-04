@@ -1,3 +1,5 @@
+import { CabecalhoPagina, Cartao } from '@/componentes/pagina'
+import { Voltar } from '@/componentes/voltar'
 import { listarEquipamentosParaSelecao } from '@/modulos/clientes/equipamentos-consultas'
 import { FormularioNovaOs } from './formulario'
 
@@ -5,9 +7,19 @@ export default async function PaginaNovaOs() {
   const equipamentos = await listarEquipamentosParaSelecao()
 
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Nova ordem de serviço</h1>
-      <FormularioNovaOs equipamentos={equipamentos} />
-    </section>
+    <>
+      <div className="flex justify-end">
+        <Voltar href="/ordens-servico" texto="Voltar para ordens de serviço" />
+      </div>
+
+      <CabecalhoPagina
+        titulo="Nova ordem de serviço"
+        descricao="O orçamento é montado depois, na ficha da OS, com o diagnóstico do Ivan."
+      />
+
+      <Cartao>
+        <FormularioNovaOs equipamentos={equipamentos} />
+      </Cartao>
+    </>
   )
 }

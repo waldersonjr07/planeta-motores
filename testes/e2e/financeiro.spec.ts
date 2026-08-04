@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
 import { clientes, equipamentos, servicos } from '../../src/db/schema'
-import { mudarSituacaoNaTela, prepararSessao } from './ajuda'
+import { mudarSituacaoNaTela, prepararSessao, resumoDaOs } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
@@ -32,7 +32,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole('link', { name: /^Orçamento/ }).click()
   await page.getByLabel('Item').selectOption({ label: 'Retífica de cilindro — R$ 210,00' })
   await page.getByRole('button', { name: 'Adicionar item' }).click()
-  await expect(page.getByText('Total R$ 210,00')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('R$ 210,00')
 })
 
 test('sinal deixa a cobrança parcial e o saldo aparece em contas a receber', async ({
@@ -45,10 +45,10 @@ test('sinal deixa a cobrança parcial e o saldo aparece em contas a receber', as
   await page.getByRole('button', { name: 'Lançar pagamento' }).click()
 
   await expect(page.getByRole('cell', { name: 'R$ 50,00' })).toBeVisible()
-  await expect(page.getByText('cobrança parcial')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('Parcial')
 
   await page.goto('/financeiro')
-  await expect(page.getByText('Total em aberto:')).toBeVisible()
+  await expect(page.getByText('Total em aberto: R$ 160,00')).toBeVisible()
   await expect(page.getByRole('cell', { name: 'R$ 160,00' })).toBeVisible()
 })
 
@@ -67,7 +67,7 @@ test('quitar tira a OS de contas a receber', async ({ page }) => {
   await page.getByLabel('Valor').fill('210,00')
   await page.getByRole('button', { name: 'Lançar pagamento' }).click()
 
-  await expect(page.getByText('cobrança quitada')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('Quitada')
 
   await page.goto('/financeiro')
   await expect(page.getByText('Ninguém devendo.')).toBeVisible()
@@ -82,8 +82,8 @@ test('despesa entra no resultado do mês', async ({ page }) => {
 
   await expect(page.getByRole('cell', { name: 'Conta de luz' })).toBeVisible()
   // Sem entradas, o resultado do mês fica negativo no valor da despesa. O valor
-  // aparece também na linha "Outras despesas", por isso o escopo no bloco.
-  const resultado = page.getByRole('group', { name: 'Resultado do período' })
+  // aparece também na linha "Outras despesas", por isso o escopo na seção.
+  const resultado = page.getByRole('region', { name: 'Resultado do período' })
   await expect(resultado.getByText('-R$ 180,00')).toHaveCount(2)
 })
 

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Botao } from '@/componentes/botao'
+import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
+import { Celula, Linha, Tabela } from '@/componentes/tabela'
 import { formatarReais } from '@/lib/dinheiro'
 import { hoje, mesDe, rotuloDoMes } from '@/lib/periodo'
 import { acaoRemoverDespesa } from '@/modulos/financeiro/acoes'
@@ -28,120 +30,119 @@ export default async function PaginaFinanceiro({
   const totalAReceber = aReceber.reduce((soma, conta) => soma + conta.saldoCentavos, 0)
 
   return (
-    <section className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Financeiro</h1>
+    <>
+      <CabecalhoPagina
+        titulo="Financeiro"
+        descricao="Regime de caixa: entrou o que foi pago no período, saiu o que foi comprado e gasto."
+      />
 
-      <div>
-        <h2 className="font-semibold">Contas a receber</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Da mais antiga para a mais recente. Total em aberto:{' '}
-          <strong>{formatarReais(totalAReceber)}</strong>
-        </p>
-
+      <Secao
+        titulo="Contas a receber"
+        descricao={`Da mais antiga para a mais recente. Total em aberto: ${formatarReais(totalAReceber)}`}
+      >
         {aReceber.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-600">Ninguém devendo.</p>
+          <Vazio>Ninguém devendo.</Vazio>
         ) : (
-          <table className="mt-2 w-full text-sm">
-            <thead className="border-b border-gray-200 text-left text-gray-600">
-              <tr>
-                <th className="py-2">OS</th>
-                <th className="py-2">Cliente</th>
-                <th className="py-2 text-right">Total</th>
-                <th className="py-2 text-right">Pago</th>
-                <th className="py-2 text-right">Saldo</th>
-                <th className="py-2 text-right">Dias</th>
-              </tr>
-            </thead>
-            <tbody>
-              {aReceber.map((conta) => (
-                <tr key={conta.osId} className="border-b border-gray-100">
-                  <td className="py-2">
-                    <Link
-                      href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
-                      className="text-blue-700 hover:underline"
-                    >
-                      {conta.numero}
-                    </Link>
-                  </td>
-                  <td className="py-2">{conta.clienteNome}</td>
-                  <td className="py-2 text-right">{formatarReais(conta.totalCentavos)}</td>
-                  <td className="py-2 text-right">{formatarReais(conta.pagoCentavos)}</td>
-                  <td className="py-2 text-right font-semibold text-red-600">
-                    {formatarReais(conta.saldoCentavos)}
-                  </td>
-                  <td className="py-2 text-right">{conta.diasEmAberto}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Tabela
+            colunas={[
+              { texto: 'OS' },
+              { texto: 'Cliente' },
+              { texto: 'Total', numerica: true },
+              { texto: 'Pago', numerica: true },
+              { texto: 'Saldo', numerica: true },
+              { texto: 'Dias', numerica: true },
+            ]}
+          >
+            {aReceber.map((conta) => (
+              <Linha key={conta.osId}>
+                <Celula forte>
+                  <Link
+                    href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
+                    className="text-acao hover:underline"
+                  >
+                    {conta.numero}
+                  </Link>
+                </Celula>
+                <Celula>{conta.clienteNome}</Celula>
+                <Celula numerica tom="suave">
+                  {formatarReais(conta.totalCentavos)}
+                </Celula>
+                <Celula numerica tom="suave">
+                  {formatarReais(conta.pagoCentavos)}
+                </Celula>
+                <Celula numerica forte tom="alerta">
+                  {formatarReais(conta.saldoCentavos)}
+                </Celula>
+                <Celula numerica>{conta.diasEmAberto}</Celula>
+              </Linha>
+            ))}
+          </Tabela>
         )}
-      </div>
+      </Secao>
 
-      <div>
-        <h2 className="font-semibold">Resultado de {rotuloDoMes(periodo)}</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Regime de caixa: entrou o que foi pago no período, saiu o que foi comprado e gasto.
-        </p>
-        <dl className="mt-2 w-80 text-sm" role="group" aria-label="Resultado do período">
-          <div className="flex justify-between py-0.5">
-            <dt className="text-gray-600">Entradas (pagamentos)</dt>
+      <Secao titulo="Resultado do período" descricao={rotuloDoMes(periodo)}>
+        <dl className="w-96 text-sm">
+          <div className="flex justify-between py-1">
+            <dt className="text-tinta-suave">Entradas (pagamentos)</dt>
             <dd>{formatarReais(resultado.entradasCentavos)}</dd>
           </div>
-          <div className="flex justify-between py-0.5">
-            <dt className="text-gray-600">Compras de peça</dt>
+          <div className="flex justify-between py-1">
+            <dt className="text-tinta-suave">Compras de peça</dt>
             <dd>-{formatarReais(resultado.comprasCentavos)}</dd>
           </div>
-          <div className="flex justify-between py-0.5">
-            <dt className="text-gray-600">Outras despesas</dt>
+          <div className="flex justify-between py-1">
+            <dt className="text-tinta-suave">Outras despesas</dt>
             <dd>-{formatarReais(resultado.despesasCentavos)}</dd>
           </div>
-          <div className="mt-1 flex justify-between border-t border-gray-200 pt-1 font-semibold">
+          <div className="mt-1 flex justify-between border-t border-borda pt-2 text-base font-semibold">
             <dt>Resultado</dt>
-            <dd className={resultado.resultadoCentavos < 0 ? 'text-red-600' : 'text-green-700'}>
+            <dd className={resultado.resultadoCentavos < 0 ? 'text-alerta' : 'text-ok'}>
               {formatarReais(resultado.resultadoCentavos)}
             </dd>
           </div>
         </dl>
-      </div>
+      </Secao>
 
-      <div className="flex flex-col gap-3">
-        <h2 className="font-semibold">Despesas de {rotuloDoMes(periodo)}</h2>
-        <FormularioDespesa hoje={hoje()} />
-
-        {despesas.length === 0 ? (
-          <p className="text-sm text-gray-600">Nenhuma despesa lançada no período.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-gray-200 text-left text-gray-600">
-              <tr>
-                <th className="py-2">Data</th>
-                <th className="py-2">Categoria</th>
-                <th className="py-2">Descrição</th>
-                <th className="py-2 text-right">Valor</th>
-                <th className="py-2" />
-              </tr>
-            </thead>
-            <tbody>
+      <Secao titulo="Despesas" descricao={rotuloDoMes(periodo)}>
+        <div className="flex flex-col gap-5">
+          {despesas.length === 0 ? (
+            <Vazio>Nenhuma despesa lançada no período.</Vazio>
+          ) : (
+            <Tabela
+              colunas={[
+                { texto: 'Data' },
+                { texto: 'Categoria' },
+                { texto: 'Descrição' },
+                { texto: 'Valor', numerica: true },
+                { texto: 'Ações', acao: true },
+              ]}
+            >
               {despesas.map((despesa) => (
-                <tr key={despesa.id} className="border-b border-gray-100">
-                  <td className="py-2">{despesa.data.split('-').reverse().join('/')}</td>
-                  <td className="py-2">{CATEGORIAS_DESPESA[despesa.categoria]}</td>
-                  <td className="py-2">{despesa.descricao}</td>
-                  <td className="py-2 text-right">{formatarReais(despesa.valorCentavos)}</td>
-                  <td className="py-2 text-right">
+                <Linha key={despesa.id}>
+                  <Celula>{despesa.data.split('-').reverse().join('/')}</Celula>
+                  <Celula tom="suave">{CATEGORIAS_DESPESA[despesa.categoria]}</Celula>
+                  <Celula>{despesa.descricao}</Celula>
+                  <Celula numerica forte>
+                    {formatarReais(despesa.valorCentavos)}
+                  </Celula>
+                  <Celula numerica>
                     <form action={acaoRemoverDespesa}>
                       <input type="hidden" name="despesaId" value={despesa.id} />
-                      <Botao variante="secundario" type="submit">
+                      <Botao variante="discreto" type="submit">
                         Remover
                       </Botao>
                     </form>
-                  </td>
-                </tr>
+                  </Celula>
+                </Linha>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </section>
+            </Tabela>
+          )}
+
+          <div className="border-t border-borda pt-5">
+            <FormularioDespesa hoje={hoje()} />
+          </div>
+        </div>
+      </Secao>
+    </>
   )
 }

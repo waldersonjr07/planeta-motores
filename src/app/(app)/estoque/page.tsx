@@ -1,4 +1,7 @@
 import { Botao } from '@/componentes/botao'
+import { Etiqueta } from '@/componentes/etiqueta'
+import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
+import { Celula, Linha, Tabela } from '@/componentes/tabela'
 import { formatarReais } from '@/lib/dinheiro'
 import { formatarQuantidade } from '@/lib/quantidade'
 import { acaoDefinirAtivoPeca } from '@/modulos/catalogo/acoes'
@@ -11,17 +14,20 @@ export default async function PaginaEstoque() {
   const aRepor = saldos.filter((peca) => peca.abaixoDoMinimo)
 
   return (
-    <section className="flex flex-col gap-5">
-      <h1 className="text-xl font-semibold">Estoque</h1>
+    <>
+      <CabecalhoPagina
+        titulo="Estoque"
+        descricao="Consumível guardado na oficina controla saldo. Peça específica, comprada só quando o serviço pede, não precisa."
+      />
 
       {aRepor.length > 0 && (
-        <div className="rounded border border-amber-300 bg-amber-50 p-4 text-sm">
-          <p className="font-semibold text-amber-900">
+        <div className="rounded-lg border border-atencao-borda bg-atencao-fundo px-5 py-4 text-sm text-atencao">
+          <p className="font-semibold">
             {aRepor.length === 1
               ? '1 peça precisa de reposição'
               : `${aRepor.length} peças precisam de reposição`}
           </p>
-          <p className="mt-1 text-amber-900">
+          <p className="mt-1">
             {aRepor
               .map((peca) => `${peca.nome} (${formatarQuantidade(peca.saldo)})`)
               .join(' · ')}
@@ -29,79 +35,72 @@ export default async function PaginaEstoque() {
         </div>
       )}
 
-      {saldos.length === 0 ? (
-        <p className="text-sm text-gray-600">
-          Nenhuma peça cadastrada. Use o formulário abaixo para cadastrar a primeira.
-        </p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 text-left text-gray-600">
-            <tr>
-              <th className="py-2">Peça</th>
-              <th className="py-2">Unidade</th>
-              <th className="py-2 text-right">Preço de venda</th>
-              <th className="py-2 text-right">Saldo</th>
-              <th className="py-2 text-right">Mínimo</th>
-              <th className="py-2">Controle</th>
-              <th className="py-2" />
-            </tr>
-          </thead>
-          <tbody>
+      <Secao titulo="Peças em estoque">
+        {saldos.length === 0 ? (
+          <Vazio>Nenhuma peça cadastrada. Cadastre a primeira logo abaixo.</Vazio>
+        ) : (
+          <Tabela
+            colunas={[
+              { texto: 'Peça' },
+              { texto: 'Unidade' },
+              { texto: 'Preço de venda', numerica: true },
+              { texto: 'Saldo', numerica: true },
+              { texto: 'Mínimo', numerica: true },
+              { texto: 'Controle' },
+              { texto: 'Ações', acao: true },
+            ]}
+          >
             {saldos.map((peca) => (
-              <tr key={peca.id} className="border-b border-gray-100">
-                <td className="py-2">
+              <Linha key={peca.id}>
+                <Celula>
                   {peca.nome}
-                  {peca.marca && <span className="text-gray-600"> · {peca.marca}</span>}
-                </td>
-                <td className="py-2">{peca.unidade}</td>
-                <td className="py-2 text-right">{formatarReais(peca.precoVendaCentavos)}</td>
-                <td
-                  className={`py-2 text-right ${
-                    peca.saldo < 0
-                      ? 'font-semibold text-red-600'
-                      : peca.abaixoDoMinimo
-                        ? 'font-semibold text-amber-600'
-                        : ''
-                  }`}
+                  {peca.marca && <span className="text-tinta-suave"> · {peca.marca}</span>}
+                </Celula>
+                <Celula tom="suave">{peca.unidade}</Celula>
+                <Celula numerica>{formatarReais(peca.precoVendaCentavos)}</Celula>
+                <Celula
+                  numerica
+                  forte
+                  tom={peca.saldo < 0 ? 'alerta' : peca.abaixoDoMinimo ? 'atencao' : 'neutro'}
                 >
                   {formatarQuantidade(peca.saldo)}
-                </td>
-                <td className="py-2 text-right text-gray-600">
+                </Celula>
+                <Celula numerica tom="suave">
                   {peca.controlaSaldo ? formatarQuantidade(peca.quantidadeMinima) : '—'}
-                </td>
-                <td className="py-2 text-gray-600">
-                  {peca.controlaSaldo ? 'Controla saldo' : 'Compra sob demanda'}
-                </td>
-                <td className="py-2 text-right">
+                </Celula>
+                <Celula>
+                  {peca.controlaSaldo ? (
+                    <Etiqueta tom="andamento">Controla saldo</Etiqueta>
+                  ) : (
+                    <Etiqueta>Compra sob demanda</Etiqueta>
+                  )}
+                </Celula>
+                <Celula numerica>
                   <form action={acaoDefinirAtivoPeca}>
                     <input type="hidden" name="id" value={peca.id} />
                     <input type="hidden" name="ativo" value="false" />
-                    <Botao variante="secundario" type="submit">
+                    <Botao variante="discreto" type="submit">
                       Remover
                     </Botao>
                   </form>
-                </td>
-              </tr>
+                </Celula>
+              </Linha>
             ))}
-          </tbody>
-        </table>
-      )}
+          </Tabela>
+        )}
+      </Secao>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="font-semibold">Cadastrar peça</h2>
-        <p className="text-sm text-gray-600">
-          Marque &ldquo;controla saldo&rdquo; para consumível que fica guardado na oficina.
-          Peça específica, comprada só quando o serviço pede, pode ficar sem controle.
-        </p>
+      <Secao
+        titulo="Cadastrar peça"
+        descricao="A peça cadastrada aqui fica disponível no orçamento da OS e no lançamento de compra."
+      >
         <FormularioPeca />
-      </div>
+      </Secao>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="font-semibold">Ajuste de inventário</h2>
-        <p className="text-sm text-gray-600">
-          O saldo é a soma dos movimentos e nunca é editado direto. Para corrigir, lance um
-          ajuste — preencher o motivo é opcional, mas é o que explica o número lá na frente.
-        </p>
+      <Secao
+        titulo="Ajuste de inventário"
+        descricao="O saldo é a soma dos movimentos e nunca é editado direto. Para corrigir, lance um ajuste — o motivo é opcional, mas é o que explica o número lá na frente."
+      >
         <FormularioAjuste
           pecas={saldos.map((peca) => ({
             id: peca.id,
@@ -110,7 +109,7 @@ export default async function PaginaEstoque() {
             saldo: peca.saldo,
           }))}
         />
-      </div>
-    </section>
+      </Secao>
+    </>
   )
 }

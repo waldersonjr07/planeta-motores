@@ -7,7 +7,9 @@ export default async function PaginaEntrar() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <FormularioLogin />
+      <div className="w-full max-w-sm rounded-lg border border-borda bg-superficie px-8 py-10">
+        <FormularioLogin />
+      </div>
     </main>
   )
 }

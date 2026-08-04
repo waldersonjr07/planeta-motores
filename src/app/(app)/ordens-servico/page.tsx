@@ -1,4 +1,8 @@
 import Link from 'next/link'
+import { LinkBotao } from '@/componentes/botao'
+import { Etiqueta, type Tom } from '@/componentes/etiqueta'
+import { CabecalhoPagina, Cartao, Vazio } from '@/componentes/pagina'
+import { Celula, Linha, Tabela } from '@/componentes/tabela'
 import { formatarData } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
 import { listarOs } from '@/modulos/os/consultas'
@@ -16,13 +20,18 @@ const NA_OFICINA: SituacaoOs[] = [
   'pronto',
 ]
 
-const COR_DA_SITUACAO: Partial<Record<SituacaoOs, string>> = {
-  orcamento_enviado: 'text-amber-600',
-  aguardando_peca: 'text-red-600',
-  pronto: 'text-green-700',
-  entregue: 'text-gray-500',
-  devolvido: 'text-gray-500',
-  cancelado: 'text-gray-500',
+const TOM_DA_SITUACAO: Record<SituacaoOs, Tom> = {
+  recebido: 'neutro',
+  em_diagnostico: 'andamento',
+  orcamento_enviado: 'atencao',
+  aprovado: 'andamento',
+  aguardando_peca: 'alerta',
+  em_execucao: 'andamento',
+  pronto: 'ok',
+  entregue: 'encerrado',
+  recusado: 'encerrado',
+  devolvido: 'encerrado',
+  cancelado: 'encerrado',
 }
 
 export default async function PaginaOrdensServico({
@@ -42,62 +51,60 @@ export default async function PaginaOrdensServico({
   const lista = await listarOs({ busca, situacoes })
 
   return (
-    <section className="flex flex-col gap-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Ordens de serviço</h1>
-        <Link
-          href="/ordens-servico/nova"
-          className="rounded bg-blue-600 px-3 py-2 text-sm text-white"
-        >
-          Nova OS
-        </Link>
-      </header>
+    <>
+      <CabecalhoPagina
+        titulo="Ordens de serviço"
+        acoes={
+          <LinkBotao href="/ordens-servico/nova" variante="primario">
+            Nova OS
+          </LinkBotao>
+        }
+      />
 
-      <FiltrosOs />
-
-      {lista.length === 0 ? (
-        <p className="text-sm text-gray-600">
-          {busca || situacao
-            ? 'Nenhuma ordem de serviço encontrada com esses filtros.'
-            : 'Nenhuma ordem de serviço aberta ainda.'}
-        </p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 text-left text-gray-600">
-            <tr>
-              <th className="py-2">OS</th>
-              <th className="py-2">Cliente</th>
-              <th className="py-2">Equipamento</th>
-              <th className="py-2">Situação</th>
-              <th className="py-2">Recebido</th>
-              <th className="py-2 text-right">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Cartao barra={<FiltrosOs />}>
+        {lista.length === 0 ? (
+          <Vazio>
+            {busca || situacao
+              ? 'Nenhuma ordem de serviço encontrada com esses filtros.'
+              : 'Nenhuma ordem de serviço aberta ainda. Comece abrindo uma em “Nova OS”.'}
+          </Vazio>
+        ) : (
+          <Tabela
+            colunas={[
+              { texto: 'OS' },
+              { texto: 'Cliente' },
+              { texto: 'Equipamento' },
+              { texto: 'Situação' },
+              { texto: 'Recebido' },
+              { texto: 'Valor', numerica: true },
+            ]}
+          >
             {lista.map((os) => (
-              <tr key={os.id} className="border-b border-gray-100">
-                <td className="py-2">
+              <Linha key={os.id}>
+                <Celula forte>
                   <Link
                     href={`/ordens-servico/${os.id}`}
-                    className="text-blue-700 hover:underline"
+                    className="text-acao hover:underline"
                   >
                     {os.numero}
                   </Link>
-                </td>
-                <td className="py-2">{os.clienteNome}</td>
-                <td className="py-2">{os.equipamentoDescricao}</td>
-                <td className={`py-2 ${COR_DA_SITUACAO[os.situacao] ?? ''}`}>
-                  {SITUACOES[os.situacao]}
-                </td>
-                <td className="py-2">{formatarData(os.recebidoEm)}</td>
-                <td className="py-2 text-right">
+                </Celula>
+                <Celula>{os.clienteNome}</Celula>
+                <Celula tom="suave">{os.equipamentoDescricao}</Celula>
+                <Celula>
+                  <Etiqueta tom={TOM_DA_SITUACAO[os.situacao]}>
+                    {SITUACOES[os.situacao]}
+                  </Etiqueta>
+                </Celula>
+                <Celula tom="suave">{formatarData(os.recebidoEm)}</Celula>
+                <Celula numerica forte={os.totalCentavos > 0}>
                   {os.totalCentavos > 0 ? formatarReais(os.totalCentavos) : '—'}
-                </td>
-              </tr>
+                </Celula>
+              </Linha>
             ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+          </Tabela>
+        )}
+      </Cartao>
+    </>
   )
 }

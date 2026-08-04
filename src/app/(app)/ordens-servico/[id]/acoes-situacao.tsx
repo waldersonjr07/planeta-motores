@@ -32,19 +32,30 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
   const opcoes = TRANSICOES[situacao].filter((para) => para !== situacao)
 
   if (opcoes.length === 0) {
-    return <p className="text-sm text-gray-600">Ordem de serviço encerrada.</p>
+    return (
+      <p className="rounded-md border border-borda bg-realce px-3 py-2 text-sm text-tinta-suave">
+        Ordem de serviço encerrada.
+      </p>
+    )
   }
 
   const motivoPedido = destino ? PEDE_MOTIVO[destino] : undefined
 
   return (
     <div className="relative">
-      <Botao type="button" onClick={() => setAberto((atual) => !atual)}>
-        Atualização da OS {aberto ? '▲' : '▼'}
+      <Botao
+        type="button"
+        aria-expanded={aberto}
+        onClick={() => setAberto((atual) => !atual)}
+      >
+        Atualização da OS
+        <span aria-hidden="true" className="text-xs">
+          {aberto ? '▲' : '▼'}
+        </span>
       </Botao>
 
       {principal && !aberto && (
-        <p className="mt-1 text-right text-xs text-gray-600">
+        <p className="mt-1.5 text-right text-xs text-tinta-fraca">
           Próximo passo: {principal.rotulo}
         </p>
       )}
@@ -52,18 +63,16 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
       {aberto && (
         <form
           action={enviar}
-          className="absolute right-0 z-10 mt-2 w-80 rounded border border-gray-300 bg-white p-4 shadow-lg"
+          className="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-borda-forte bg-superficie p-4 shadow-lg"
         >
           <input type="hidden" name="osId" value={osId} />
 
-          <p className="mb-1 text-xs uppercase tracking-wide text-gray-500">
-            Situação atual
-          </p>
-          <p className="mb-3 font-semibold">{SITUACOES[situacao]}</p>
+          <p className="text-xs uppercase tracking-wide text-tinta-fraca">Situação atual</p>
+          <p className="mb-4 mt-0.5 font-semibold">{SITUACOES[situacao]}</p>
 
-          <p className="mb-2 text-xs uppercase tracking-wide text-gray-500">Mudar para</p>
+          <p className="mb-2 text-xs uppercase tracking-wide text-tinta-fraca">Mudar para</p>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {opcoes.map((para) => {
               const recomendado = para === principal?.para
               const pedeMotivo = Boolean(PEDE_MOTIVO[para])
@@ -78,41 +87,43 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
                   value={pedeMotivo ? undefined : para}
                   disabled={pendente}
                   onClick={pedeMotivo ? () => setDestino(para) : undefined}
-                  className={`rounded border px-3 py-2 text-left text-sm disabled:opacity-60 ${
+                  className={`flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
                     escolhido
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-acao bg-acao-fundo'
                       : recomendado
-                        ? 'border-blue-600 text-blue-800'
-                        : 'border-gray-300 hover:bg-gray-50'
+                        ? 'border-acao text-acao-escura hover:bg-acao-fundo'
+                        : 'border-borda hover:bg-realce'
                   }`}
                 >
-                  {SITUACOES[para]}
+                  <span>{SITUACOES[para]}</span>
                   {recomendado && (
-                    <span className="ml-2 text-xs text-blue-700">· próximo passo</span>
+                    <span className="text-xs text-acao">próximo passo</span>
                   )}
                 </button>
               )
             })}
           </div>
 
-          <label className="mt-3 flex flex-col gap-1 text-sm">
-            <span className="text-gray-700">Observação (opcional)</span>
+          <label className="mt-4 flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+              Observação (opcional)
+            </span>
             <input
               name="observacao"
               placeholder="Fica registrada no histórico"
-              className="rounded border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-md border border-borda-forte px-3 py-2 text-sm placeholder:text-tinta-fraca"
             />
           </label>
 
           {motivoPedido && (
-            <div className="mt-3 flex flex-col gap-2 rounded bg-amber-50 p-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-amber-900">{motivoPedido}</span>
+            <div className="mt-4 flex flex-col gap-2 rounded-md border border-atencao-borda bg-atencao-fundo p-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-atencao">{motivoPedido}</span>
                 <input
                   name="motivo"
                   required
                   aria-label={motivoPedido}
-                  className="rounded border border-amber-300 px-3 py-2 text-sm"
+                  className="rounded-md border border-atencao-borda bg-superficie px-3 py-2 text-sm"
                 />
               </label>
               <Botao type="submit" name="para" value={destino!} disabled={pendente}>

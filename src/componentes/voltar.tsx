@@ -9,9 +9,9 @@ export function Voltar({ href, texto }: { href: string; texto: string }) {
   return (
     <Link
       href={href}
-      className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+      className="inline-flex items-center gap-1 text-sm text-tinta-suave hover:text-acao hover:underline"
     >
-      ← {texto}
+      <span aria-hidden="true">←</span> {texto}
     </Link>
   )
 }

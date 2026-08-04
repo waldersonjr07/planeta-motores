@@ -4,6 +4,9 @@ import { linkDoWhatsapp, preencherModelo } from '@/modulos/avisos/mensagens'
 
 type Modelos = { orcamento: string; pronto: string; cobranca: string }
 
+const LINK =
+  'inline-flex items-center rounded-md border border-borda-forte bg-superficie px-3 py-1.5 text-sm hover:bg-realce'
+
 /**
  * PDFs e mensagem de WhatsApp. O envio é manual de propósito: a API oficial
  * exige conta verificada, templates aprovados e custo por mensagem.
@@ -30,38 +33,29 @@ export function DocumentosEAvisos({
   ]
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 pt-4 text-sm">
-      <span className="text-gray-600">Documentos:</span>
-      {/* Nomeados "PDF do …" para não se confundirem com as abas da ficha. */}
-      <a
-        href={`/api/documentos/comprovante/${osId}`}
-        target="_blank"
-        rel="noreferrer"
-        className="rounded border border-gray-300 px-3 py-1.5 hover:bg-gray-50"
-      >
-        PDF do comprovante
-      </a>
-      <a
-        href={`/api/documentos/orcamento/${osId}`}
-        target="_blank"
-        rel="noreferrer"
-        className="rounded border border-gray-300 px-3 py-1.5 hover:bg-gray-50"
-      >
-        PDF do orçamento
-      </a>
-      <a
-        href={`/api/documentos/recibo/${osId}`}
-        target="_blank"
-        rel="noreferrer"
-        className="rounded border border-gray-300 px-3 py-1.5 hover:bg-gray-50"
-      >
-        PDF do recibo
-      </a>
+    <div className="flex flex-wrap items-start gap-x-8 gap-y-4 rounded-lg border border-borda bg-superficie px-5 py-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-tinta-fraca">
+          Documentos
+        </span>
+        {/* Nomeados "PDF do …" para não se confundirem com as abas da ficha. */}
+        <a href={`/api/documentos/comprovante/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
+          PDF do comprovante
+        </a>
+        <a href={`/api/documentos/orcamento/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
+          PDF do orçamento
+        </a>
+        <a href={`/api/documentos/recibo/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
+          PDF do recibo
+        </a>
+      </div>
 
-      {telefone ? (
-        <>
-          <span className="ml-4 text-gray-600">WhatsApp:</span>
-          {avisos
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-tinta-fraca">
+          WhatsApp
+        </span>
+        {telefone ? (
+          avisos
             .filter((aviso) => aviso.ativo)
             .map((aviso) => (
               <a
@@ -69,17 +63,17 @@ export function DocumentosEAvisos({
                 href={linkDoWhatsapp(telefone, preencherModelo(modelos[aviso.chave], valores))}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded border border-green-600 px-3 py-1.5 text-green-700 hover:bg-green-50"
+                className="inline-flex items-center rounded-md border border-ok/40 bg-ok-fundo px-3 py-1.5 text-sm text-ok hover:bg-ok/10"
               >
                 {aviso.rotulo}
               </a>
-            ))}
-        </>
-      ) : (
-        <span className="ml-4 text-gray-500">
-          Cliente sem telefone cadastrado — não dá para montar a mensagem.
-        </span>
-      )}
+            ))
+        ) : (
+          <span className="text-sm text-tinta-fraca">
+            Cliente sem telefone cadastrado — não dá para montar a mensagem.
+          </span>
+        )}
+      </div>
     </div>
   )
 }

@@ -2,8 +2,8 @@
 
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
-import { Campo, CampoTexto } from '@/componentes/campo'
-import { MensagemErro } from '@/componentes/mensagem-erro'
+import { Campo, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { MensagemErro, MensagemOk } from '@/componentes/mensagem-erro'
 import { acaoSalvarConfiguracoes } from '@/modulos/configuracoes/acoes'
 
 type Valores = {
@@ -22,24 +22,27 @@ export function FormularioConfiguracoes({ valores }: { valores: Valores }) {
   const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
 
   return (
-    <form action={enviar} className="flex max-w-2xl flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+    <form action={enviar} className="flex flex-col gap-6">
+      <GradeFormulario>
         <Campo
           rotulo="Nome da empresa"
           nome="empresaNome"
           required
+          className="col-span-5"
           defaultValue={valores.empresaNome}
           erro={campos.empresaNome}
         />
         <Campo
           rotulo="CNPJ"
           nome="empresaCnpj"
+          className="col-span-3"
           defaultValue={valores.empresaCnpj ?? ''}
           erro={campos.empresaCnpj}
         />
         <Campo
           rotulo="Telefone"
           nome="empresaTelefone"
+          className="col-span-2"
           defaultValue={valores.empresaTelefone ?? ''}
           erro={campos.empresaTelefone}
         />
@@ -48,44 +51,54 @@ export function FormularioConfiguracoes({ valores }: { valores: Valores }) {
           nome="orcamentoValidadeDias"
           type="number"
           min={1}
+          className="col-span-2"
           defaultValue={valores.orcamentoValidadeDias}
           erro={campos.orcamentoValidadeDias}
         />
+
+        <CampoTexto
+          rotulo="Endereço"
+          nome="empresaEndereco"
+          rows={2}
+          className="col-span-12"
+          defaultValue={valores.empresaEndereco ?? ''}
+        />
+      </GradeFormulario>
+
+      <div className="flex flex-col gap-4 border-t border-borda pt-5">
+        <p className="text-sm text-tinta-suave">
+          Nas mensagens você pode usar <code className="text-tinta">{'{{cliente}}'}</code>,{' '}
+          <code className="text-tinta">{'{{numero}}'}</code>,{' '}
+          <code className="text-tinta">{'{{equipamento}}'}</code>,{' '}
+          <code className="text-tinta">{'{{total}}'}</code> e{' '}
+          <code className="text-tinta">{'{{saldo}}'}</code>.
+        </p>
+
+        <CampoTexto
+          rotulo="Mensagem de orçamento"
+          nome="modeloMsgOrcamento"
+          rows={2}
+          defaultValue={valores.modeloMsgOrcamento}
+          erro={campos.modeloMsgOrcamento}
+        />
+        <CampoTexto
+          rotulo="Mensagem de serviço pronto"
+          nome="modeloMsgPronto"
+          rows={2}
+          defaultValue={valores.modeloMsgPronto}
+          erro={campos.modeloMsgPronto}
+        />
+        <CampoTexto
+          rotulo="Mensagem de cobrança"
+          nome="modeloMsgCobranca"
+          rows={2}
+          defaultValue={valores.modeloMsgCobranca}
+          erro={campos.modeloMsgCobranca}
+        />
       </div>
 
-      <CampoTexto
-        rotulo="Endereço"
-        nome="empresaEndereco"
-        defaultValue={valores.empresaEndereco ?? ''}
-      />
-
-      <p className="text-xs text-gray-600">
-        Nas mensagens você pode usar <code>{'{{cliente}}'}</code>, <code>{'{{numero}}'}</code>,{' '}
-        <code>{'{{equipamento}}'}</code>, <code>{'{{total}}'}</code> e{' '}
-        <code>{'{{saldo}}'}</code>.
-      </p>
-
-      <CampoTexto
-        rotulo="Mensagem de orçamento"
-        nome="modeloMsgOrcamento"
-        defaultValue={valores.modeloMsgOrcamento}
-        erro={campos.modeloMsgOrcamento}
-      />
-      <CampoTexto
-        rotulo="Mensagem de serviço pronto"
-        nome="modeloMsgPronto"
-        defaultValue={valores.modeloMsgPronto}
-        erro={campos.modeloMsgPronto}
-      />
-      <CampoTexto
-        rotulo="Mensagem de cobrança"
-        nome="modeloMsgCobranca"
-        defaultValue={valores.modeloMsgCobranca}
-        erro={campos.modeloMsgCobranca}
-      />
-
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
-      {resultado?.ok && <p className="text-sm text-green-700">Configurações salvas.</p>}
+      {resultado?.ok && <MensagemOk>Configurações salvas.</MensagemOk>}
 
       <Botao type="submit" disabled={pendente} className="self-start">
         {pendente ? 'Salvando…' : 'Salvar'}

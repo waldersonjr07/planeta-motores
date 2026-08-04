@@ -2,8 +2,9 @@
 
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
-import { CampoTexto } from '@/componentes/campo'
+import { CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
+import { Vazio } from '@/componentes/pagina'
 import type { EquipamentoParaSelecao } from '@/modulos/clientes/equipamentos-consultas'
 import { acaoCriarOs } from '@/modulos/os/acoes'
 
@@ -25,21 +26,21 @@ export function FormularioNovaOs({
 
   if (equipamentos.length === 0) {
     return (
-      <p className="text-sm text-gray-600">
+      <Vazio>
         Nenhum equipamento cadastrado. Cadastre o cliente e o equipamento dele antes de
         abrir a ordem de serviço.
-      </p>
+      </Vazio>
     )
   }
 
   return (
-    <form action={enviar} className="flex max-w-2xl flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="text-gray-700">Cliente e equipamento</span>
-        <select
-          name="equipamento"
+    <form action={enviar} className="flex flex-col gap-5">
+      <GradeFormulario>
+        <CampoSelecao
+          rotulo="Cliente e equipamento"
+          nome="equipamento"
           required
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
+          className="col-span-8"
         >
           <option value="">Selecione…</option>
           {[...porCliente.entries()].map(([cliente, itens]) => (
@@ -54,20 +55,28 @@ export function FormularioNovaOs({
               ))}
             </optgroup>
           ))}
-        </select>
-      </label>
+        </CampoSelecao>
 
-      <CampoTexto
-        rotulo="Problema relatado pelo cliente"
-        nome="problemaRelatado"
-        placeholder="Não pega a frio, perde força no corte…"
-      />
-      <CampoTexto
-        rotulo="Acessórios recebidos"
-        nome="acessoriosRecebidos"
-        placeholder="Chave, alça, protetor…"
-      />
-      <CampoTexto rotulo="Observações" nome="observacoes" />
+        <CampoTexto
+          rotulo="Problema relatado pelo cliente"
+          nome="problemaRelatado"
+          className="col-span-12"
+          placeholder="Não pega a frio, perde força no corte…"
+        />
+        <CampoTexto
+          rotulo="Acessórios recebidos"
+          nome="acessoriosRecebidos"
+          rows={2}
+          className="col-span-6"
+          placeholder="Chave, alça, protetor…"
+        />
+        <CampoTexto
+          rotulo="Observações"
+          nome="observacoes"
+          rows={2}
+          className="col-span-6"
+        />
+      </GradeFormulario>
 
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
 

@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
-import { Campo, CampoSelecao, CampoTexto } from '@/componentes/campo'
+import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoAtualizarCliente, acaoCriarCliente } from '@/modulos/clientes/acoes'
 
@@ -32,20 +32,22 @@ export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
   const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
 
   return (
-    <form action={enviar} className="flex max-w-2xl flex-col gap-4">
+    <form action={enviar} className="flex flex-col gap-6">
       {cliente && <input type="hidden" name="id" value={cliente.id} />}
 
-      <div className="grid grid-cols-2 gap-4">
+      <GradeFormulario>
         <Campo
           rotulo="Nome"
           nome="nome"
           required
+          className="col-span-6"
           defaultValue={cliente?.nome ?? ''}
           erro={campos.nome}
         />
         <CampoSelecao
           rotulo="Tipo de pessoa"
           nome="tipoPessoa"
+          className="col-span-3"
           defaultValue={cliente?.tipoPessoa ?? 'fisica'}
           opcoes={[
             { valor: 'fisica', texto: 'Pessoa física' },
@@ -55,12 +57,15 @@ export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
         <Campo
           rotulo="CPF/CNPJ"
           nome="documento"
+          className="col-span-3"
           defaultValue={cliente?.documento ?? ''}
           erro={campos.documento}
         />
+
         <Campo
           rotulo="Telefone"
           nome="telefone"
+          className="col-span-3"
           defaultValue={cliente?.telefone ?? ''}
           erro={campos.telefone}
         />
@@ -68,32 +73,64 @@ export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
           rotulo="E-mail"
           nome="email"
           type="email"
+          className="col-span-5"
           defaultValue={cliente?.email ?? ''}
           erro={campos.email}
         />
         <Campo
           rotulo="CEP"
           nome="cep"
+          className="col-span-4"
           defaultValue={cliente?.cep ?? ''}
           erro={campos.cep}
         />
-        <Campo rotulo="Logradouro" nome="logradouro" defaultValue={cliente?.logradouro ?? ''} />
-        <Campo rotulo="Número" nome="numero" defaultValue={cliente?.numero ?? ''} />
+
+        <Campo
+          rotulo="Logradouro"
+          nome="logradouro"
+          className="col-span-6"
+          defaultValue={cliente?.logradouro ?? ''}
+        />
+        <Campo
+          rotulo="Número"
+          nome="numero"
+          className="col-span-2"
+          defaultValue={cliente?.numero ?? ''}
+        />
         <Campo
           rotulo="Complemento"
           nome="complemento"
+          className="col-span-4"
           defaultValue={cliente?.complemento ?? ''}
         />
-        <Campo rotulo="Bairro" nome="bairro" defaultValue={cliente?.bairro ?? ''} />
-        <Campo rotulo="Cidade" nome="cidade" defaultValue={cliente?.cidade ?? ''} />
-        <Campo rotulo="UF" nome="uf" maxLength={2} defaultValue={cliente?.uf ?? ''} />
-      </div>
 
-      <CampoTexto
-        rotulo="Observações"
-        nome="observacoes"
-        defaultValue={cliente?.observacoes ?? ''}
-      />
+        <Campo
+          rotulo="Bairro"
+          nome="bairro"
+          className="col-span-4"
+          defaultValue={cliente?.bairro ?? ''}
+        />
+        <Campo
+          rotulo="Cidade"
+          nome="cidade"
+          className="col-span-6"
+          defaultValue={cliente?.cidade ?? ''}
+        />
+        <Campo
+          rotulo="UF"
+          nome="uf"
+          maxLength={2}
+          className="col-span-2"
+          defaultValue={cliente?.uf ?? ''}
+        />
+
+        <CampoTexto
+          rotulo="Observações"
+          nome="observacoes"
+          className="col-span-12"
+          defaultValue={cliente?.observacoes ?? ''}
+        />
+      </GradeFormulario>
 
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
 

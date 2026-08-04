@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { db } from '../../src/db'
 import { clientes, equipamentos, pecas, servicos } from '../../src/db/schema'
-import { lancarAjuste, mudarSituacaoNaTela, prepararSessao } from './ajuda'
+import { lancarAjuste, mudarSituacaoNaTela, prepararSessao, resumoDaOs } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
@@ -60,11 +60,11 @@ test('percorre a OS do recebimento até a entrega e baixa o estoque', async ({ p
 
   // 21.000 + 2 × 23.000 = 67.000 centavos. O valor aparece no cabeçalho e na
   // soma do orçamento; conferimos o do cabeçalho, que fica sempre à vista.
-  await expect(page.getByText('Total R$ 670,00')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('R$ 670,00')
 
   // Envia, aprova, executa, conclui e entrega.
   await mudarSituacaoNaTela(page, 'Orçamento enviado')
-  await expect(page.getByText('orçamento versão 1')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('versão 1')
 
   await mudarSituacaoNaTela(page, 'Aprovado')
   await mudarSituacaoNaTela(page, 'Em execução')
@@ -101,7 +101,7 @@ test('item digitado em "Outros" entra no orçamento com valor livre', async ({ p
   await page.getByRole('button', { name: 'Adicionar item' }).click()
 
   await expect(page.getByRole('cell', { name: 'Mão de obra de desmontagem' })).toBeVisible()
-  await expect(page.getByText('Total R$ 150,00')).toBeVisible()
+  await expect(resumoDaOs(page)).toContainText('R$ 150,00')
 
   // O catálogo continua intacto: o item digitado vale só para esta OS.
   await page.goto('/catalogo/servicos')

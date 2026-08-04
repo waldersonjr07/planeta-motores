@@ -3,11 +3,14 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SITUACOES } from '@/modulos/os/situacoes'
 
-const GRUPOS = [
+const OPCOES = [
   { valor: '', texto: 'Todas as situações' },
   { valor: 'na_oficina', texto: 'Na oficina (em andamento)' },
   ...Object.entries(SITUACOES).map(([valor, texto]) => ({ valor, texto })),
 ]
+
+const CONTROLE =
+  'rounded-md border border-borda-forte bg-superficie px-3 py-1.5 text-sm placeholder:text-tinta-fraca'
 
 export function FiltrosOs() {
   const router = useRouter()
@@ -24,7 +27,7 @@ export function FiltrosOs() {
 
   return (
     <form
-      className="flex flex-wrap items-center gap-3"
+      className="flex flex-wrap items-center gap-2"
       onSubmit={(evento) => {
         evento.preventDefault()
         const dados = new FormData(evento.currentTarget)
@@ -34,20 +37,20 @@ export function FiltrosOs() {
       <input
         name="busca"
         defaultValue={parametros.get('busca') ?? ''}
-        placeholder="Buscar por nº da OS, cliente ou equipamento"
+        placeholder="Nº da OS, cliente ou equipamento"
         aria-label="Buscar ordem de serviço"
-        className="w-96 rounded border border-gray-300 px-3 py-2 text-sm"
+        className={`w-72 ${CONTROLE}`}
       />
 
       <select
         aria-label="Situação"
         defaultValue={parametros.get('situacao') ?? ''}
         onChange={(evento) => navegar({ situacao: evento.target.value })}
-        className="rounded border border-gray-300 px-3 py-2 text-sm"
+        className={CONTROLE}
       >
-        {GRUPOS.map((grupo) => (
-          <option key={grupo.valor} value={grupo.valor}>
-            {grupo.texto}
+        {OPCOES.map((opcao) => (
+          <option key={opcao.valor} value={opcao.valor}>
+            {opcao.texto}
           </option>
         ))}
       </select>

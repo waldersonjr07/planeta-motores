@@ -27,16 +27,18 @@ test('ajuste move o saldo e a peça sai da lista de reposição', async ({ page 
 
 test('a confirmação mostra o saldo antes e depois, e dá para cancelar', async ({ page }) => {
   await page.goto('/estoque')
-  await page.getByLabel('Peça do ajuste').selectOption({ label: 'Óleo 2 tempos (L)' })
-  await page.getByLabel('Quantidade do ajuste').fill('10')
-  await page.getByRole('button', { name: 'Lançar ajuste' }).click()
+  const secao = page.getByRole('region', { name: 'Ajuste de inventário' })
 
-  await expect(page.getByText('Confirmar ajuste?')).toBeVisible()
-  await expect(page.getByText('passa de 0 para')).toBeVisible()
+  await secao.getByLabel('Peça').selectOption({ label: 'Óleo 2 tempos (L)' })
+  await secao.getByLabel('Quantidade').fill('10')
+  await secao.getByRole('button', { name: 'Lançar ajuste' }).click()
 
-  await page.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(secao.getByText('Confirmar ajuste?')).toBeVisible()
+  await expect(secao.getByText('passa de 0 para')).toBeVisible()
 
-  await expect(page.getByText('Confirmar ajuste?')).toHaveCount(0)
+  await secao.getByRole('button', { name: 'Cancelar' }).click()
+
+  await expect(secao.getByText('Confirmar ajuste?')).toHaveCount(0)
   await expect(page.getByText('Ajuste lançado.')).toHaveCount(0)
 })
 
