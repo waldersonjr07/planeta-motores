@@ -1275,6 +1275,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Arquivos:**
 - Modificar: `src/db/schema/financeiro.ts:39`
 - Modificar: `src/modulos/financeiro/esquemas.ts:20-26`
+- Conferir: `src/modulos/financeiro/operacoes.ts` — `registrarDespesa` repassa a entrada inteira ao `insert`; com `descricao` podendo ser nula, conferir se alguma anotação de tipo local precisa acompanhar
 - Modificar: `src/app/(app)/financeiro/despesa-formulario.tsx`
 - Modificar: `src/app/(app)/financeiro/page.tsx:124`
 - Modificar: `testes/integracao/financeiro.test.ts`
@@ -2323,7 +2324,7 @@ export function FormularioCompra({
               permiteCriar
               rotuloCriar={(texto) => `Cadastrar “${texto}” como peça nova`}
               placeholder="Digite para procurar ou cadastrar"
-              className={pecaNova[linha] ? 'col-span-4' : 'col-span-6'}
+              className="col-span-4"
               aria-label={`Peça da linha ${linha + 1}`}
               aoMudar={({ id, nome }) =>
                 setPecaNova((atual) => ({ ...atual, [linha]: !id && Boolean(nome) }))
@@ -2333,12 +2334,15 @@ export function FormularioCompra({
             {/*
               A oficina compra óleo em litro. Peça nova caindo em "un" por
               omissão faria 0,5 L virar meia unidade no saldo.
+
+              Sempre renderizado, escondido por CSS quando não se aplica: se
+              saísse do DOM, `getAll('unidadeNova')` encurtaria e deixaria de
+              casar por posição com as outras listas da linha.
             */}
-            {pecaNova[linha] && (
+            <div className={pecaNova[linha] ? 'col-span-2' : 'hidden'}>
               <CampoSelecao
                 rotulo="Unidade"
                 nome="unidadeNova"
-                className="col-span-2"
                 aria-label={`Unidade da linha ${linha + 1}`}
                 opcoes={[
                   { valor: 'un', texto: 'Unidade' },
@@ -2346,7 +2350,7 @@ export function FormularioCompra({
                   { valor: 'mL', texto: 'Mililitro' },
                 ]}
               />
-            )}
+            </div>
 
             <Campo
               rotulo="Quantidade"
@@ -2388,24 +2392,7 @@ export function FormularioCompra({
 }
 ```
 
-**Cuidado com o `unidadeNova`:** ele só é renderizado nas linhas que criam peça, então `getAll('unidadeNova')` **não** fica alinhado com as demais listas quando há mistura de linhas. Para manter o alinhamento, trocar o `CampoSelecao` condicional por um sempre renderizado, escondido quando não se aplica:
-
-```tsx
-<div className={pecaNova[linha] ? 'col-span-2' : 'hidden'}>
-  <CampoSelecao
-    rotulo="Unidade"
-    nome="unidadeNova"
-    aria-label={`Unidade da linha ${linha + 1}`}
-    opcoes={[
-      { valor: 'un', texto: 'Unidade' },
-      { valor: 'L', texto: 'Litro' },
-      { valor: 'mL', texto: 'Mililitro' },
-    ]}
-  />
-</div>
-```
-
-E a classe da peça volta a ser fixa: `className="col-span-4"`. Usar esta versão, não a condicional acima.
+**Não transforme o `unidadeNova` num render condicional.** É tentador trocar o `<div className={… : 'hidden'}>` por `{pecaNova[linha] && <CampoSelecao …/>}`, que é o idioma usado no resto do projeto. Aqui isso quebra: quando só algumas linhas criam peça nova, `formulario.getAll('unidadeNova')` volta mais curto que `getAll('quantidade')`, e a unidade da linha 3 é lida como se fosse da linha 2. O campo precisa existir no DOM em toda linha.
 
 - [ ] **Passo 2: Reescrever o teste ponta a ponta existente**
 
@@ -2513,6 +2500,11 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ### Task 12: Moldura dos PDFs
+
+> **Executar junto com a Task 13, num despacho só.** A Task 12 troca a
+> interface do `Cabecalho`, que a Task 13 consome — sozinha, ela deixa o build
+> vermelho, e tarefa que não fecha verde não dá para revisar. As duas
+> compartilham o commit final, no último passo da Task 13.
 
 **Arquivos:**
 - Modificar: `src/modulos/documentos/componentes.tsx` (reescrita)
@@ -2919,29 +2911,9 @@ export function Rodape({ empresa }: { empresa: DadosEmpresa }) {
 export { Document, Image, Page, Text, View, formatarData, formatarReais }
 ```
 
-- [ ] **Passo 2: Conferir que compila**
+- [ ] **Passo 2: Não rodar o build nem commitar ainda**
 
-```powershell
-npm run build
-```
-
-Esperado: compila. `pdf.tsx` ainda usa a interface antiga do `Cabecalho` — se o build reclamar de `titulo` faltando, seguir para a Task 13 antes de tentar de novo; as duas tarefas fecham juntas.
-
-Se preferir manter o build verde entre as duas, fazer as Tasks 12 e 13 num commit só.
-
-- [ ] **Passo 3: Commit**
-
-```bash
-git add src/modulos/documentos/componentes.tsx
-git commit -m "Da aos PDFs a moldura de papelaria comercial
-
-Emblema centralizado e regua marinho na primeira pagina, faixa compacta nas
-seguintes, blocos emoldurados, tabela numerada com coluna de unidade, caixa
-de totais com filete teal, assinaturas e rodape com paginacao. Cores tiradas
-do tema da tela.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-```
+`pdf.tsx` ainda chama `Cabecalho` com a prop `titulo`, que deixou de existir — o build **vai** falhar aqui, e isso é esperado. Seguir direto para a Task 13, que conserta os chamadores e fecha as duas com um build verde e um commit só.
 
 ---
 
@@ -3313,9 +3285,16 @@ Esperado: tudo verde.
 
 - [ ] **Passo 7: Commit**
 
+Um commit só, fechando as Tasks 12 e 13:
+
 ```bash
-git add src/modulos/documentos/pdf.tsx testes/integracao/documentos.test.ts
-git commit -m "Reescreve comprovante, orcamento e recibo na moldura nova
+git add src/modulos/documentos testes/integracao/documentos.test.ts
+git commit -m "Da aos PDFs a identidade da empresa em formato brasileiro
+
+Moldura nova: emblema centralizado e regua marinho na primeira pagina, faixa
+compacta nas seguintes, blocos emoldurados, tabela numerada com coluna de
+unidade, caixa de totais com filete teal, assinaturas e rodape com paginacao.
+Cores tiradas do tema da tela.
 
 Comprovante sem valores, com problema e acessorios. Orcamento com tabela por
 tipo, totais, validade e linha de aceite. Recibo com o valor por extenso,
@@ -3353,6 +3332,6 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 - Task 3 muda quatro formulários de uma vez — o build é o que pega erro de tipo
 - Task 11 **quebra** um teste ponta a ponta existente; a reescrita está no plano
-- Task 12 deixa o build vermelho até a Task 13; as duas podem virar um commit só
+- Tasks 12 e 13 são **um despacho só**: a 12 troca a interface do `Cabecalho` que a 13 consome, então sozinha ela deixa o build vermelho. Commit único, no fim da 13
 - Task 13 depende de `os.cliente.documento` existir em `OsCompleta` — o passo diz o que fazer se não existir
 - O `unidadeNova` precisa ser sempre renderizado (escondido por CSS) para as listas do `getAll` não desalinharem
