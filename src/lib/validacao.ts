@@ -1,8 +1,8 @@
 import { z } from 'zod'
+import { apenasDigitos } from './mascaras'
 
-export function apenasDigitos(valor: string): string {
-  return valor.replace(/\D/g, '')
-}
+// Reexportado para não quebrar quem já importava daqui.
+export { apenasDigitos }
 
 function opcionalComDigitos(tamanhosAceitos: number[], mensagem: string) {
   return z
