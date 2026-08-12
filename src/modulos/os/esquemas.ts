@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { documentoOpcional, telefoneOpcional, textoObrigatorio } from '@/lib/validacao'
+import { esquemaComAplicacaoOutra } from '@/modulos/clientes/equipamentos-esquemas'
 
 const opcional = z
   .string()
@@ -22,42 +23,26 @@ export type EntradaOs = z.infer<typeof entradaOs>
  * correria não dá para parar, cadastrar o cliente, cadastrar o equipamento e
  * só então abrir a OS — o cadastro sai junto, numa tela só.
  */
-export const entradaOsRapida = z
-  .object({
-    nomeCliente: textoObrigatorio('Nome do cliente'),
-    documentoCliente: documentoOpcional,
-    telefoneCliente: telefoneOpcional,
-    tipoMotor: z.enum(['2T', '4T']),
-    aplicacao: z.enum([
-      'rocadeira',
-      'motosserra',
-      'motobomba',
-      'gerador',
-      'soprador',
-      'outro',
-    ]),
-    aplicacaoOutra: opcional,
-    marca: opcional,
-    modelo: opcional,
-    problemaRelatado: opcional,
-    acessoriosRecebidos: opcional,
-    observacoes: opcional,
-  })
-  .superRefine((dados, ctx) => {
-    // Sem isso o cadastro acumula equipamento "Outro" que ninguém identifica.
-    if (dados.aplicacao === 'outro' && !dados.aplicacaoOutra) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['aplicacaoOutra'],
-        message: 'Diga qual é a máquina',
-      })
-    }
-  })
-  .transform((dados) => ({
-    ...dados,
-    // Trocou "Outro" por uma aplicação da lista: o texto anterior não fica.
-    aplicacaoOutra: dados.aplicacao === 'outro' ? dados.aplicacaoOutra : null,
-  }))
+export const entradaOsRapida = esquemaComAplicacaoOutra({
+  nomeCliente: textoObrigatorio('Nome do cliente'),
+  documentoCliente: documentoOpcional,
+  telefoneCliente: telefoneOpcional,
+  tipoMotor: z.enum(['2T', '4T']),
+  aplicacao: z.enum([
+    'rocadeira',
+    'motosserra',
+    'motobomba',
+    'gerador',
+    'soprador',
+    'outro',
+  ]),
+  aplicacaoOutra: opcional,
+  marca: opcional,
+  modelo: opcional,
+  problemaRelatado: opcional,
+  acessoriosRecebidos: opcional,
+  observacoes: opcional,
+})
 
 export type EntradaOsRapida = z.infer<typeof entradaOsRapida>
 
