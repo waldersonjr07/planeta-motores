@@ -48,6 +48,7 @@ export async function listarEquipamentosParaSelecao(): Promise<EquipamentoParaSe
       equipamentoId: equipamentos.id,
       tipoMotor: equipamentos.tipoMotor,
       aplicacao: equipamentos.aplicacao,
+      aplicacaoOutra: equipamentos.aplicacaoOutra,
       marca: equipamentos.marca,
       modelo: equipamentos.modelo,
     })

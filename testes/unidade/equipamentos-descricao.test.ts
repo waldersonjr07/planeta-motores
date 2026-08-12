@@ -33,3 +33,39 @@ test('funciona com apenas a marca', () => {
     }),
   ).toBe('Gerador Branco (4T)')
 })
+
+test('a máquina "outro" é descrita pelo que foi digitado', () => {
+  expect(
+    descreverEquipamento({
+      aplicacao: 'outro',
+      aplicacaoOutra: 'Cortador de grama',
+      marca: 'Husqvarna',
+      modelo: '236',
+      tipoMotor: '2T',
+    }),
+  ).toBe('Cortador de grama Husqvarna 236 (2T)')
+})
+
+test('sem o texto, "outro" continua saindo como Outro', () => {
+  expect(
+    descreverEquipamento({
+      aplicacao: 'outro',
+      aplicacaoOutra: null,
+      marca: null,
+      modelo: null,
+      tipoMotor: '4T',
+    }),
+  ).toBe('Outro (4T)')
+})
+
+test('aplicação da lista ignora o texto de "outro"', () => {
+  expect(
+    descreverEquipamento({
+      aplicacao: 'motosserra',
+      aplicacaoOutra: 'Cortador de grama',
+      marca: 'Stihl',
+      modelo: null,
+      tipoMotor: '2T',
+    }),
+  ).toBe('Motosserra Stihl (2T)')
+})

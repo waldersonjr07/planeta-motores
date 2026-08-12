@@ -133,3 +133,29 @@ test('inativo sai da lista, salvo quando pedido', async () => {
   expect(await listarEquipamentosDoCliente(clienteId)).toHaveLength(0)
   expect(await listarEquipamentosDoCliente(clienteId, true)).toHaveLength(1)
 })
+
+test('equipamento "outro" sem dizer qual é reprovado', () => {
+  const analise = entradaEquipamento.safeParse({
+    clienteId: '00000000-0000-0000-0000-000000000001',
+    tipoMotor: '2T',
+    aplicacao: 'outro',
+  })
+
+  expect(analise.success).toBe(false)
+  if (analise.success) return
+  expect(analise.error.issues[0].path).toEqual(['aplicacaoOutra'])
+  expect(analise.error.issues[0].message).toBe('Diga qual é a máquina')
+})
+
+test('trocar de "outro" para a lista descarta o texto', () => {
+  const analise = entradaEquipamento.safeParse({
+    clienteId: '00000000-0000-0000-0000-000000000001',
+    tipoMotor: '2T',
+    aplicacao: 'motosserra',
+    aplicacaoOutra: 'Cortador de grama',
+  })
+
+  expect(analise.success).toBe(true)
+  if (!analise.success) return
+  expect(analise.data.aplicacaoOutra).toBeNull()
+})

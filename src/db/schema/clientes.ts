@@ -58,6 +58,8 @@ export const equipamentos = pgTable('equipamentos', {
     .references(() => clientes.id, { onDelete: 'cascade' }),
   tipoMotor: tipoMotor('tipo_motor').notNull(),
   aplicacao: aplicacaoEquipamento('aplicacao').notNull(),
+  /** O que é a máquina quando `aplicacao` é 'outro'. Nula nas demais. */
+  aplicacaoOutra: text('aplicacao_outra'),
   marca: text('marca'),
   modelo: text('modelo'),
   numeroSerie: text('numero_serie'),

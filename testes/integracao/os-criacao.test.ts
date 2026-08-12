@@ -144,3 +144,30 @@ test('a busca encontra por número, cliente e equipamento', async () => {
   expect(await listarOs({ busca: 'stihl' })).toHaveLength(1)
   expect(await listarOs({ busca: 'inexistente' })).toHaveLength(0)
 })
+
+test('equipamento "outro" aparece com o texto digitado na lista e no detalhe da OS', async () => {
+  const [cliente] = await db.insert(clientes).values({ nome: 'Marcos Andrade' }).returning()
+  const [equipamento] = await db
+    .insert(equipamentos)
+    .values({
+      clienteId: cliente.id,
+      tipoMotor: '2T',
+      aplicacao: 'outro',
+      aplicacaoOutra: 'Cortador de grama',
+      marca: 'Husqvarna',
+      modelo: '236',
+    })
+    .returning()
+  const r = await criarOs({
+    clienteId: cliente.id,
+    equipamentoId: equipamento.id,
+    ...semTexto,
+  })
+  if (!r.ok) throw new Error('criação falhou')
+
+  const [linha] = await listarOs({})
+  const os = await obterOs(r.dados.id)
+
+  expect(linha.equipamentoDescricao).toBe('Cortador de grama Husqvarna 236 (2T)')
+  expect(os?.equipamento.descricao).toBe('Cortador de grama Husqvarna 236 (2T)')
+})

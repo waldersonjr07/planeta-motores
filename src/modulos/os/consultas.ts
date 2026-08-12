@@ -86,6 +86,7 @@ export async function listarOs(
       clienteNome: clientes.nome,
       tipoMotor: equipamentos.tipoMotor,
       aplicacao: equipamentos.aplicacao,
+      aplicacaoOutra: equipamentos.aplicacaoOutra,
       marca: equipamentos.marca,
       modelo: equipamentos.modelo,
       // Total já somado no banco. Identificadores à mão, com apelido na tabela
@@ -111,6 +112,7 @@ export async function listarOs(
     clienteNome: linha.clienteNome,
     equipamentoDescricao: descreverEquipamento({
       aplicacao: linha.aplicacao,
+      aplicacaoOutra: linha.aplicacaoOutra,
       marca: linha.marca,
       modelo: linha.modelo,
       tipoMotor: linha.tipoMotor,
@@ -130,6 +132,7 @@ export async function obterOs(id: string): Promise<OsCompleta | null> {
         id: equipamentos.id,
         tipoMotor: equipamentos.tipoMotor,
         aplicacao: equipamentos.aplicacao,
+        aplicacaoOutra: equipamentos.aplicacaoOutra,
         marca: equipamentos.marca,
         modelo: equipamentos.modelo,
         numeroSerie: equipamentos.numeroSerie,

@@ -92,6 +92,7 @@ export async function criarOsComClienteNovo(
     equipamento: {
       tipoMotor: entrada.tipoMotor,
       aplicacao: entrada.aplicacao,
+      aplicacaoOutra: entrada.aplicacaoOutra,
       marca: entrada.marca,
       modelo: entrada.modelo,
       numeroSerie: null,
