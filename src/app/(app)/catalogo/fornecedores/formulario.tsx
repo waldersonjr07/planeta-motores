@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, GradeFormulario } from '@/componentes/campo'
+import { CampoMascarado } from '@/componentes/campo-mascarado'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoSalvarFornecedor } from '@/modulos/catalogo/acoes'
 
@@ -14,9 +15,10 @@ export function FormularioFornecedor() {
     <form action={enviar} className="flex flex-col gap-3">
       <GradeFormulario>
         <Campo rotulo="Nome" nome="nome" required className="col-span-4" erro={campos.nome} />
-        <Campo
+        <CampoMascarado
           rotulo="Telefone"
           nome="telefone"
+          mascara="telefone"
           className="col-span-3"
           erro={campos.telefone}
         />

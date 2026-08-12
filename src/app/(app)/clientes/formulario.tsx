@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { CampoMascarado } from '@/componentes/campo-mascarado'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoAtualizarCliente, acaoCriarCliente } from '@/modulos/clientes/acoes'
 
@@ -54,17 +55,19 @@ export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
             { valor: 'juridica', texto: 'Pessoa jurídica' },
           ]}
         />
-        <Campo
+        <CampoMascarado
           rotulo="CPF/CNPJ"
           nome="documento"
+          mascara="documento"
           className="col-span-3"
           defaultValue={cliente?.documento ?? ''}
           erro={campos.documento}
         />
 
-        <Campo
+        <CampoMascarado
           rotulo="Telefone"
           nome="telefone"
+          mascara="telefone"
           className="col-span-3"
           defaultValue={cliente?.telefone ?? ''}
           erro={campos.telefone}
@@ -77,9 +80,10 @@ export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
           defaultValue={cliente?.email ?? ''}
           erro={campos.email}
         />
-        <Campo
+        <CampoMascarado
           rotulo="CEP"
           nome="cep"
+          mascara="cep"
           className="col-span-4"
           defaultValue={cliente?.cep ?? ''}
           erro={campos.cep}

@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { CampoMascarado } from '@/componentes/campo-mascarado'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import type { EquipamentoParaSelecao } from '@/modulos/clientes/equipamentos-consultas'
 import { APLICACOES } from '@/modulos/clientes/equipamentos-descricao'
@@ -73,15 +74,17 @@ export function FormularioNovaOs({
               className="col-span-6"
               erro={campos.nomeCliente}
             />
-            <Campo
+            <CampoMascarado
               rotulo="CPF/CNPJ"
               nome="documentoCliente"
+              mascara="documento"
               className="col-span-3"
               erro={campos.documentoCliente}
             />
-            <Campo
+            <CampoMascarado
               rotulo="Telefone"
               nome="telefoneCliente"
+              mascara="telefone"
               className="col-span-3"
               erro={campos.telefoneCliente}
             />

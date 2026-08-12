@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { CampoMascarado } from '@/componentes/campo-mascarado'
 import { MensagemErro, MensagemOk } from '@/componentes/mensagem-erro'
 import { acaoSalvarConfiguracoes } from '@/modulos/configuracoes/acoes'
 
@@ -32,16 +33,18 @@ export function FormularioConfiguracoes({ valores }: { valores: Valores }) {
           defaultValue={valores.empresaNome}
           erro={campos.empresaNome}
         />
-        <Campo
+        <CampoMascarado
           rotulo="CNPJ"
           nome="empresaCnpj"
+          mascara="documento"
           className="col-span-3"
           defaultValue={valores.empresaCnpj ?? ''}
           erro={campos.empresaCnpj}
         />
-        <Campo
+        <CampoMascarado
           rotulo="Telefone"
           nome="empresaTelefone"
+          mascara="telefone"
           className="col-span-2"
           defaultValue={valores.empresaTelefone ?? ''}
           erro={campos.empresaTelefone}
