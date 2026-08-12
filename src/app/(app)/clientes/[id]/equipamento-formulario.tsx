@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
@@ -9,6 +9,8 @@ import { APLICACOES } from '@/modulos/clientes/equipamentos-descricao'
 
 export function FormularioEquipamento({ clienteId }: { clienteId: string }) {
   const [resultado, enviar, pendente] = useActionState(acaoCriarEquipamento, null)
+  const [aplicacaoOutro, setAplicacaoOutro] = useState(false)
+  const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
 
   return (
     <form action={enviar} className="flex flex-col gap-3">
@@ -19,8 +21,20 @@ export function FormularioEquipamento({ clienteId }: { clienteId: string }) {
           rotulo="Aplicação"
           nome="aplicacao"
           className="col-span-3"
+          onChange={(evento) => setAplicacaoOutro(evento.target.value === 'outro')}
           opcoes={Object.entries(APLICACOES).map(([valor, texto]) => ({ valor, texto }))}
         />
+
+        {aplicacaoOutro && (
+          <Campo
+            rotulo="Qual máquina?"
+            nome="aplicacaoOutra"
+            required
+            className="col-span-4"
+            placeholder="Cortador de grama, compactador…"
+            erro={campos.aplicacaoOutra}
+          />
+        )}
         <CampoSelecao
           rotulo="Motor"
           nome="tipoMotor"

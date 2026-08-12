@@ -16,6 +16,7 @@ export function FormularioNovaOs({
 }) {
   const [resultado, enviar, pendente] = useActionState(acaoCriarOs, null)
   const [clienteNovo, setClienteNovo] = useState(equipamentos.length === 0)
+  const [aplicacaoOutro, setAplicacaoOutro] = useState(false)
   const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
 
   // Agrupa por cliente para o <optgroup>: a Lucilene procura pelo dono do
@@ -93,11 +94,23 @@ export function FormularioNovaOs({
               rotulo="Máquina"
               nome="aplicacao"
               className="col-span-3"
+              onChange={(evento) => setAplicacaoOutro(evento.target.value === 'outro')}
               opcoes={Object.entries(APLICACOES).map(([valor, texto]) => ({
                 valor,
                 texto,
               }))}
             />
+
+            {aplicacaoOutro && (
+              <Campo
+                rotulo="Qual máquina?"
+                nome="aplicacaoOutra"
+                required
+                className="col-span-4"
+                placeholder="Cortador de grama, compactador…"
+                erro={campos.aplicacaoOutra}
+              />
+            )}
             <CampoSelecao
               rotulo="Motor"
               nome="tipoMotor"
