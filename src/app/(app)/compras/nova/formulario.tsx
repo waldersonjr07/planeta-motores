@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
+import { CampoCombo } from '@/componentes/campo-combo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoRegistrarCompra } from '@/modulos/compras/acoes'
 
@@ -21,18 +22,21 @@ export function FormularioCompra({
 }) {
   const [resultado, enviar, pendente] = useActionState(acaoRegistrarCompra, null)
   const [linhas, setLinhas] = useState([0])
+  // Guarda quais linhas estão criando peça nova, para revelar a unidade.
+  const [pecaNova, setPecaNova] = useState<Record<number, boolean>>({})
 
   return (
     <form action={enviar} className="flex flex-col gap-6">
       <GradeFormulario>
-        <CampoSelecao rotulo="Fornecedor" nome="fornecedorId" className="col-span-4">
-          <option value="">Não informado</option>
-          {fornecedores.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.texto}
-            </option>
-          ))}
-        </CampoSelecao>
+        <CampoCombo
+          rotulo="Fornecedor"
+          nome="fornecedor"
+          opcoes={fornecedores}
+          permiteCriar
+          rotuloCriar={(texto) => `Cadastrar “${texto}” como fornecedor novo`}
+          placeholder="Digite para procurar ou cadastrar"
+          className="col-span-4"
+        />
 
         <Campo
           rotulo="Data"
@@ -43,18 +47,17 @@ export function FormularioCompra({
           className="col-span-2"
         />
 
-        <CampoSelecao
+        {/*
+          A OS filtra enquanto se digita, mas não se cria daqui: uma OS nasce
+          de um equipamento recebido, com problema relatado e situação inicial.
+        */}
+        <CampoCombo
           rotulo="OS que motivou a compra"
-          nome="osId"
+          nome="os"
+          opcoes={ordens}
+          placeholder="Nenhuma (reposição de estoque)"
           className="col-span-4"
-        >
-          <option value="">Nenhuma (reposição de estoque)</option>
-          {ordens.map((os) => (
-            <option key={os.id} value={os.id}>
-              {os.texto}
-            </option>
-          ))}
-        </CampoSelecao>
+        />
 
         <Campo rotulo="Nota / documento" nome="numeroDocumento" className="col-span-2" />
       </GradeFormulario>
@@ -66,19 +69,40 @@ export function FormularioCompra({
 
         {linhas.map((linha) => (
           <GradeFormulario key={linha}>
-            <CampoSelecao
+            <CampoCombo
               rotulo="Peça"
-              nome="pecaId"
-              className="col-span-6"
+              nome="peca"
+              opcoes={pecas}
+              permiteCriar
+              rotuloCriar={(texto) => `Cadastrar “${texto}” como peça nova`}
+              placeholder="Digite para procurar ou cadastrar"
+              className="col-span-4"
               aria-label={`Peça da linha ${linha + 1}`}
-            >
-              <option value="">Selecione…</option>
-              {pecas.map((peca) => (
-                <option key={peca.id} value={peca.id}>
-                  {peca.texto}
-                </option>
-              ))}
-            </CampoSelecao>
+              aoMudar={({ id, nome }) =>
+                setPecaNova((atual) => ({ ...atual, [linha]: !id && Boolean(nome) }))
+              }
+            />
+
+            {/*
+              A oficina compra óleo em litro. Peça nova caindo em "un" por
+              omissão faria 0,5 L virar meia unidade no saldo.
+
+              Sempre renderizado, escondido por CSS quando não se aplica: se
+              saísse do DOM, `getAll('unidadeNova')` encurtaria e deixaria de
+              casar por posição com as outras listas da linha.
+            */}
+            <div className={pecaNova[linha] ? 'col-span-2' : 'hidden'}>
+              <CampoSelecao
+                rotulo="Unidade"
+                nome="unidadeNova"
+                aria-label={`Unidade da linha ${linha + 1}`}
+                opcoes={[
+                  { valor: 'un', texto: 'Unidade' },
+                  { valor: 'L', texto: 'Litro' },
+                  { valor: 'mL', texto: 'Mililitro' },
+                ]}
+              />
+            </div>
 
             <Campo
               rotulo="Quantidade"

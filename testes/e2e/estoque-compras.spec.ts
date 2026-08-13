@@ -65,10 +65,13 @@ test('compra entra no estoque', async ({ page }) => {
   await expect(page.getByText('Nenhuma compra registrada ainda.')).toBeVisible()
 
   await page.getByRole('link', { name: 'Nova compra' }).click()
-  await page.getByLabel('Fornecedor').selectOption({ label: 'Peças Rio Claro' })
-  // Os campos da linha têm rótulo próprio: o formulário aceita várias linhas,
-  // e "Peça" sozinho seria ambíguo tanto para o teste quanto para leitor de tela.
-  await page.getByLabel('Peça da linha 1').selectOption({ label: 'Óleo 2 tempos (L)' })
+
+  await page.getByLabel('Fornecedor').fill('Peças Rio')
+  await page.getByRole('option', { name: 'Peças Rio Claro' }).click()
+
+  await page.getByLabel('Peça da linha 1').fill('Óleo 2 tempos')
+  await page.getByRole('option', { name: 'Óleo 2 tempos (L)' }).click()
+
   await page.getByLabel('Quantidade da linha 1').fill('4')
   await page.getByLabel('Custo unitário da linha 1').fill('30,00')
   await page.getByRole('button', { name: 'Registrar compra' }).click()
@@ -79,4 +82,45 @@ test('compra entra no estoque', async ({ page }) => {
   await page.goto('/estoque')
   const linha = page.getByRole('row').filter({ hasText: 'Óleo 2 tempos' })
   await expect(linha.getByRole('cell', { name: '4', exact: true })).toBeVisible()
+})
+
+test('peça digitada na hora entra no cadastro e no estoque', async ({ page }) => {
+  await page.goto('/compras/nova')
+
+  await page.getByLabel('Fornecedor').fill('Peças Rio Claro')
+  await page.getByRole('option', { name: 'Peças Rio Claro' }).click()
+
+  await page.getByLabel('Peça da linha 1').fill('Vela NGK BPMR7A')
+  await page.getByRole('option', { name: /Cadastrar .*Vela NGK BPMR7A/ }).click()
+
+  await page.getByLabel('Quantidade da linha 1').fill('4')
+  await page.getByLabel('Custo unitário da linha 1').fill('28,00')
+  await page.getByRole('button', { name: 'Registrar compra' }).click()
+
+  await expect(page.getByRole('cell', { name: 'R$ 112,00' })).toBeVisible()
+
+  await page.goto('/estoque')
+  const linha = page.getByRole('row').filter({ hasText: 'Vela NGK BPMR7A' })
+  await expect(linha.getByRole('cell', { name: '4', exact: true })).toBeVisible()
+})
+
+test('peça nova em litro respeita a unidade escolhida', async ({ page }) => {
+  await page.goto('/compras/nova')
+
+  await page.getByLabel('Peça da linha 1').fill('Óleo Motul 800')
+  await page.getByRole('option', { name: /Cadastrar .*Óleo Motul 800/ }).click()
+  await page.getByLabel('Unidade da linha 1').selectOption('L')
+
+  await page.getByLabel('Quantidade da linha 1').fill('0,5')
+  await page.getByLabel('Custo unitário da linha 1').fill('45,00')
+  await page.getByRole('button', { name: 'Registrar compra' }).click()
+
+  // Espera o redirecionamento de sucesso antes de navegar: sair da página no
+  // meio da ação de servidor pode abortar a requisição em voo (mesmo risco
+  // documentado em `prepararSessao`, aqui no envio da compra).
+  await expect(page).toHaveURL('/compras')
+
+  await page.goto('/estoque')
+  const linha = page.getByRole('row').filter({ hasText: 'Óleo Motul 800' })
+  await expect(linha.getByRole('cell', { name: '0,5', exact: true })).toBeVisible()
 })
