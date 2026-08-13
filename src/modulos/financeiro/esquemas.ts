@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { textoObrigatorio } from '@/lib/validacao'
 
 const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Informe a data')
 
@@ -20,7 +19,11 @@ export type EntradaPagamento = z.infer<typeof entradaPagamento>
 export const entradaDespesa = z.object({
   data: dataIso,
   categoria: z.enum(['ferramenta', 'aluguel', 'energia', 'combustivel', 'outros']),
-  descricao: textoObrigatorio('Descrição'),
+  descricao: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : null)),
   valorCentavos: z.number().int().positive('O valor precisa ser maior que zero'),
   fornecedorId: z.string().uuid().nullable().optional(),
 })

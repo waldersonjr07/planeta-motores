@@ -75,16 +75,48 @@ test('quitar tira a OS de contas a receber', async ({ page }) => {
 
 test('despesa entra no resultado do mês', async ({ page }) => {
   await page.goto('/financeiro')
-  await page.getByLabel('Descrição').fill('Conta de luz')
-  await page.getByLabel('Valor').fill('180,00')
-  await page.getByLabel('Categoria').selectOption('energia')
-  await page.getByRole('button', { name: 'Lançar despesa' }).click()
+  const secaoDespesas = page.getByRole('region', { name: 'Despesas' })
+
+  // "Descrição" só aparece em "Outros"; é o que dá um texto livre pra conferir
+  // na listagem.
+  await secaoDespesas.getByLabel('Categoria').selectOption('outros')
+  await secaoDespesas.getByLabel('Especifique (opcional)').fill('Conta de luz')
+  await secaoDespesas.getByLabel('Valor').fill('180,00')
+  await secaoDespesas.getByRole('button', { name: 'Lançar despesa' }).click()
 
   await expect(page.getByRole('cell', { name: 'Conta de luz' })).toBeVisible()
   // Sem entradas, o resultado do mês fica negativo no valor da despesa. O valor
   // aparece também na linha "Outras despesas", por isso o escopo na seção.
   const resultado = page.getByRole('region', { name: 'Resultado do período' })
   await expect(resultado.getByText('-R$ 180,00')).toHaveCount(2)
+})
+
+test('o campo de descrição só aparece na categoria Outros', async ({ page }) => {
+  await page.goto('/financeiro')
+  const secao = page.getByRole('region', { name: 'Despesas' })
+
+  await expect(secao.getByLabel('Especifique (opcional)')).toHaveCount(0)
+
+  await secao.getByLabel('Categoria').selectOption('outros')
+  await expect(secao.getByLabel('Especifique (opcional)')).toBeVisible()
+
+  await secao.getByLabel('Categoria').selectOption('energia')
+  await expect(secao.getByLabel('Especifique (opcional)')).toHaveCount(0)
+})
+
+test('despesa de energia sem descrição é lançada e listada com travessão', async ({
+  page,
+}) => {
+  await page.goto('/financeiro')
+  const secao = page.getByRole('region', { name: 'Despesas' })
+
+  await secao.getByLabel('Categoria').selectOption('energia')
+  await secao.getByLabel('Valor').fill('340,00')
+  await secao.getByRole('button', { name: 'Lançar despesa' }).click()
+
+  const linha = page.getByRole('row').filter({ hasText: 'Energia' })
+  await expect(linha.getByRole('cell', { name: '—' })).toBeVisible()
+  await expect(linha.getByRole('cell', { name: 'R$ 340,00' })).toBeVisible()
 })
 
 test('a ficha oferece os PDFs e a mensagem de WhatsApp', async ({ page }) => {

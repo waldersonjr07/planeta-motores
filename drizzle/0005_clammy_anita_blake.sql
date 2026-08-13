@@ -1,0 +1,1 @@
+ALTER TABLE "despesas" ALTER COLUMN "descricao" DROP NOT NULL;

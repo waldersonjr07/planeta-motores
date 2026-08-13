@@ -36,6 +36,13 @@
       "when": 1786542324686,
       "tag": "0004_milky_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786590433738,
+      "tag": "0005_clammy_anita_blake",
+      "breakpoints": true
     }
   ]
 }

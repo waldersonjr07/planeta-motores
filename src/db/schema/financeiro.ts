@@ -36,7 +36,8 @@ export const despesas = pgTable('despesas', {
   id: uuid('id').primaryKey().defaultRandom(),
   data: date('data').notNull(),
   categoria: categoriaDespesa('categoria').notNull().default('outros'),
-  descricao: text('descricao').notNull(),
+  /** Só faz sentido em "outros"; nas demais a categoria já descreve. */
+  descricao: text('descricao'),
   valorCentavos: integer('valor_centavos').notNull(),
   fornecedorId: uuid('fornecedor_id').references(() => fornecedores.id, {
     onDelete: 'set null',

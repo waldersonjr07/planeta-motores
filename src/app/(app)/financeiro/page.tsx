@@ -121,7 +121,7 @@ export default async function PaginaFinanceiro({
                 <Linha key={despesa.id}>
                   <Celula>{despesa.data.split('-').reverse().join('/')}</Celula>
                   <Celula tom="suave">{CATEGORIAS_DESPESA[despesa.categoria]}</Celula>
-                  <Celula>{despesa.descricao}</Celula>
+                  <Celula>{despesa.descricao ?? '—'}</Celula>
                   <Celula numerica forte>
                     {formatarReais(despesa.valorCentavos)}
                   </Celula>

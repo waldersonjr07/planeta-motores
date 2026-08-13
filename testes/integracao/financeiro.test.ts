@@ -5,10 +5,12 @@ import { fornecedores, ordensServico, pecas } from '../../src/db/schema'
 import { registrarCompra } from '../../src/modulos/compras/operacoes'
 import {
   listarContasAReceber,
+  listarDespesas,
   listarPagamentosDaOs,
   resultadoDoPeriodo,
   resumoDeCobrancaDaOs,
 } from '../../src/modulos/financeiro/consultas'
+import { entradaDespesa } from '../../src/modulos/financeiro/esquemas'
 import {
   registrarDespesa,
   registrarPagamento,
@@ -244,4 +246,44 @@ test('desconto na OS reduz o total cobrado', async () => {
     .where(eq(ordensServico.id, osId))
 
   expect((await resumoDeCobrancaDaOs(osId)).totalCentavos).toBe(20000)
+})
+
+test('despesa "outros" sem descrição é aceita e grava nulo', async () => {
+  const r = await registrarDespesa({
+    data: '2026-08-11',
+    categoria: 'outros',
+    descricao: null,
+    valorCentavos: 18000,
+    fornecedorId: null,
+  })
+
+  expect(r.ok).toBe(true)
+  const [lancada] = await listarDespesas({ de: '2026-08-01', ate: '2026-08-31' })
+  expect(lancada.descricao).toBeNull()
+  expect(lancada.valorCentavos).toBe(18000)
+})
+
+test('despesa de categoria conhecida também dispensa descrição', async () => {
+  const r = await registrarDespesa({
+    data: '2026-08-11',
+    categoria: 'energia',
+    descricao: null,
+    valorCentavos: 34000,
+    fornecedorId: null,
+  })
+
+  expect(r.ok).toBe(true)
+})
+
+test('descrição em branco vira nulo, não string vazia', () => {
+  const analise = entradaDespesa.safeParse({
+    data: '2026-08-11',
+    categoria: 'outros',
+    descricao: '   ',
+    valorCentavos: 1000,
+  })
+
+  expect(analise.success).toBe(true)
+  if (!analise.success) return
+  expect(analise.data.descricao).toBeNull()
 })
