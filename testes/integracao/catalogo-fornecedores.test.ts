@@ -74,3 +74,29 @@ test('criarFornecedorMinimo cria só com o nome', async () => {
   expect(fornecedor.ativo).toBe(true)
   expect(fornecedor.telefone).toBeNull()
 })
+
+test('criarFornecedorMinimo dentro de transacao com rollback não grava nada', async () => {
+  await db
+    .transaction(async (tx) => {
+      await criarFornecedorMinimo('Fornecedor fantasma', tx)
+      throw new Error('força o rollback')
+    })
+    .catch(() => {})
+
+  expect(await db.select().from(fornecedores)).toHaveLength(0)
+})
+
+test('criarFornecedorMinimo dentro de transacao com commit grava corretamente', async () => {
+  let idCriado: string
+  await db.transaction(async (tx) => {
+    const resultado = await criarFornecedorMinimo('Fornecedor real', tx)
+    idCriado = resultado.id
+  })
+
+  const [fornecedor] = await db
+    .select()
+    .from(fornecedores)
+    .where(eq(fornecedores.id, idCriado!))
+  expect(fornecedor.nome).toBe('Fornecedor real')
+  expect(fornecedor.ativo).toBe(true)
+})

@@ -107,3 +107,26 @@ test('criarPecaMinima apara o nome', async () => {
   const [peca] = await db.select().from(pecas).where(eq(pecas.id, id))
   expect(peca.nome).toBe('Bujão')
 })
+
+test('criarPecaMinima dentro de transacao com rollback não grava nada', async () => {
+  await db
+    .transaction(async (tx) => {
+      await criarPecaMinima('Peça fantasma', 'un', tx)
+      throw new Error('força o rollback')
+    })
+    .catch(() => {})
+
+  expect(await db.select().from(pecas)).toHaveLength(0)
+})
+
+test('criarPecaMinima dentro de transacao com commit grava corretamente', async () => {
+  let idCriado: string
+  await db.transaction(async (tx) => {
+    const resultado = await criarPecaMinima('Peça real', 'L', tx)
+    idCriado = resultado.id
+  })
+
+  const [peca] = await db.select().from(pecas).where(eq(pecas.id, idCriado!))
+  expect(peca.nome).toBe('Peça real')
+  expect(peca.unidade).toBe('L')
+})
