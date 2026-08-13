@@ -84,6 +84,29 @@ test('compra entra no estoque', async ({ page }) => {
   await expect(linha.getByRole('cell', { name: '4', exact: true })).toBeVisible()
 })
 
+test('digitar o nome exato da peça casa com ela em vez de cadastrar outra', async ({
+  page,
+}) => {
+  await page.goto('/compras/nova')
+
+  // O nome real, sem a marca e a unidade que a opção exibe. E sai do campo
+  // pelo teclado, sem clicar na opção: é o gesto de quem digita rápido.
+  await page.getByLabel('Peça da linha 1').fill('Óleo 2 tempos')
+  await page.getByLabel('Peça da linha 1').press('Tab')
+  await expect(page.getByLabel('Unidade da linha 1')).toBeHidden()
+
+  await page.getByLabel('Quantidade da linha 1').fill('3')
+  await page.getByLabel('Custo unitário da linha 1').fill('30,00')
+  await page.getByRole('button', { name: 'Registrar compra' }).click()
+  await expect(page).toHaveURL('/compras')
+
+  await page.goto('/estoque')
+  // Uma linha só: o saldo não se repartiu entre duas peças homônimas.
+  const linha = page.getByRole('row').filter({ hasText: 'Óleo 2 tempos' })
+  await expect(linha).toHaveCount(1)
+  await expect(linha.getByRole('cell', { name: '3', exact: true })).toBeVisible()
+})
+
 test('peça digitada na hora entra no cadastro e no estoque', async ({ page }) => {
   await page.goto('/compras/nova')
 

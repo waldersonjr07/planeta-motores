@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { pecas } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
+import { normalizarTexto } from '@/lib/texto'
 import type { Transacao } from '@/modulos/estoque/operacoes'
 import {
   paraEntradaPeca,
@@ -62,13 +63,30 @@ export async function definirAtivoPeca(id: string, ativo: boolean): Promise<Resu
  * tem valor padrão na tabela, e a Lucilene completa depois em Estoque se a
  * peça passar a controlar saldo. Aceita transação para que a peça e a compra
  * entrem juntas ou não entrem.
+ *
+ * Nome que já existe devolve a peça existente em vez de cadastrar outra. É a
+ * última defesa: o saldo de estoque é a soma dos movimentos de uma peça, e
+ * duas linhas quase homônimas repartem esse saldo sem que a aplicação ofereça
+ * jeito de fundi-las depois.
+ *
+ * A comparação corre em JavaScript sobre os candidatos trazidos do banco, e
+ * não em SQL: comparar sem acento no Postgres pediria a extensão `unaccent`,
+ * que este projeto não instala. O catálogo de uma oficina cabe em memória.
  */
 export async function criarPecaMinima(
   nome: string,
   unidade: 'un' | 'L' | 'mL',
   tx?: Transacao,
 ): Promise<{ id: string }> {
+  // `executor`, não `db`: dentro da transação a peça criada logo antes ainda
+  // não foi confirmada, e uma conexão de fora não a enxergaria.
   const executor = tx ?? db
+
+  const alvo = normalizarTexto(nome)
+  const cadastradas = await executor.select({ id: pecas.id, nome: pecas.nome }).from(pecas)
+  const existente = cadastradas.find((peca) => normalizarTexto(peca.nome) === alvo)
+  if (existente) return { id: existente.id }
+
   const [criada] = await executor
     .insert(pecas)
     .values({ nome: nome.trim(), unidade })

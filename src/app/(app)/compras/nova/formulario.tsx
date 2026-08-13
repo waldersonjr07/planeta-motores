@@ -3,11 +3,11 @@
 import { useActionState, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
-import { CampoCombo } from '@/componentes/campo-combo'
+import { CampoCombo, type OpcaoCombo } from '@/componentes/campo-combo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
 import { acaoRegistrarCompra } from '@/modulos/compras/acoes'
 
-type Opcao = { id: string; texto: string }
+type Opcao = OpcaoCombo
 
 export function FormularioCompra({
   pecas,

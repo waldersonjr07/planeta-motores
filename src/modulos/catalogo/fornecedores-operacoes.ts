@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { fornecedores } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
+import { normalizarTexto } from '@/lib/texto'
 import type { Transacao } from '@/modulos/estoque/operacoes'
 import type { EntradaFornecedor } from './fornecedores-esquemas'
 
@@ -43,12 +44,24 @@ export async function definirAtivoFornecedor(
   return sucesso(null)
 }
 
-/** Cadastro na hora, feito de dentro da compra. Ver `criarPecaMinima`. */
+/**
+ * Cadastro na hora, feito de dentro da compra. Nome que já existe devolve o
+ * fornecedor existente, sem cadastrar outro. Ver `criarPecaMinima`, que
+ * explica por que a comparação sem acento acontece em JavaScript.
+ */
 export async function criarFornecedorMinimo(
   nome: string,
   tx?: Transacao,
 ): Promise<{ id: string }> {
   const executor = tx ?? db
+
+  const alvo = normalizarTexto(nome)
+  const cadastrados = await executor
+    .select({ id: fornecedores.id, nome: fornecedores.nome })
+    .from(fornecedores)
+  const existente = cadastrados.find((f) => normalizarTexto(f.nome) === alvo)
+  if (existente) return { id: existente.id }
+
   const [criado] = await executor
     .insert(fornecedores)
     .values({ nome: nome.trim() })

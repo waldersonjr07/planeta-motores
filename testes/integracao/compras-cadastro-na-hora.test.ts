@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
 import { fornecedores, pecas } from '../../src/db/schema'
+import { criarFornecedorMinimo } from '../../src/modulos/catalogo/fornecedores-operacoes'
+import { criarPecaMinima } from '../../src/modulos/catalogo/pecas-operacoes'
 import { listarCompras, obterCompra } from '../../src/modulos/compras/consultas'
 import { registrarCompra } from '../../src/modulos/compras/operacoes'
 import { saldoDaPeca } from '../../src/modulos/estoque/consultas'
@@ -72,6 +74,64 @@ test('peça existente e peça nova convivem na mesma compra', async () => {
 
   expect(await db.select().from(pecas)).toHaveLength(2)
   expect(await saldoDaPeca(existente.id)).toBe(1)
+})
+
+test('peça já cadastrada não é duplicada quando o nome é digitado', async () => {
+  // Acento e caixa diferentes, e o texto da opção na tela ainda traz marca e
+  // unidade — quem digita escreve o nome, e é por ele que tem de casar.
+  const [existente] = await db
+    .insert(pecas)
+    .values({ nome: 'Óleo 2 Tempos', unidade: 'L' })
+    .returning()
+
+  await registrarCompra({
+    data: '2026-08-11',
+    itens: [
+      { pecaNome: 'oleo 2 tempos', unidade: 'un', quantidade: 2, custoUnitarioCentavos: 4500 },
+    ],
+  })
+
+  const todas = await db.select().from(pecas)
+  expect(todas).toHaveLength(1)
+  expect(todas[0].id).toBe(existente.id)
+  // A unidade cadastrada continua valendo: a peça não nasceu agora.
+  expect(todas[0].unidade).toBe('L')
+  // O saldo fica inteiro numa peça só, que é o que estava em risco.
+  expect(await saldoDaPeca(existente.id)).toBe(2)
+  expect(todas[0].ultimoCustoCentavos).toBe(4500)
+})
+
+test('fornecedor já cadastrado não é duplicado quando o nome é digitado', async () => {
+  const [existente] = await db
+    .insert(fornecedores)
+    .values({ nome: 'Peças Rio Claro' })
+    .returning()
+
+  const r = await registrarCompra({
+    fornecedorNome: 'pecas rio claro',
+    data: '2026-08-11',
+    itens: [
+      { pecaNome: 'Vela', unidade: 'un', quantidade: 1, custoUnitarioCentavos: 2800 },
+    ],
+  })
+  if (!r.ok) throw new Error('compra falhou')
+
+  expect(await db.select().from(fornecedores)).toHaveLength(1)
+  expect((await obterCompra(r.dados.id))?.fornecedorId).toBe(existente.id)
+})
+
+test('criarPecaMinima e criarFornecedorMinimo devolvem o cadastro que já existe', async () => {
+  const [peca] = await db.insert(pecas).values({ nome: 'Retentor Traseiro' }).returning()
+  const [fornecedor] = await db
+    .insert(fornecedores)
+    .values({ nome: 'Distribuidora São José' })
+    .returning()
+
+  expect((await criarPecaMinima('  retentor traseiro ', 'L')).id).toBe(peca.id)
+  expect((await criarFornecedorMinimo('DISTRIBUIDORA SAO JOSE')).id).toBe(fornecedor.id)
+
+  expect(await db.select().from(pecas)).toHaveLength(1)
+  expect(await db.select().from(fornecedores)).toHaveLength(1)
 })
 
 test('fornecedor existente não é duplicado quando vem por id', async () => {

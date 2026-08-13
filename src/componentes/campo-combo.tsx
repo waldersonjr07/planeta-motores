@@ -3,7 +3,24 @@
 import { useId, useState } from 'react'
 import { normalizarTexto } from '@/lib/texto'
 
-export type OpcaoCombo = { id: string; texto: string }
+/**
+ * `texto` é o que aparece na lista; `chave` é o que conta para dizer "isto que
+ * eu digitei já existe". Os dois se separam porque a tela enfeita o texto para
+ * quem lê — "Óleo 2 tempos Ipiranga (L)" — e ninguém digita o enfeite. Sem
+ * `chave`, digitar o nome real não casaria com nada e proporia cadastrar uma
+ * segunda peça com o mesmo nome.
+ */
+export type OpcaoCombo = { id: string; texto: string; chave?: string }
+
+/** A opção cujo texto exibido ou chave é exatamente o que se digitou. */
+function casarExata(opcoes: OpcaoCombo[], alvo: string): OpcaoCombo | undefined {
+  if (!alvo) return undefined
+  return opcoes.find(
+    (opcao) =>
+      normalizarTexto(opcao.chave ?? opcao.texto) === alvo ||
+      normalizarTexto(opcao.texto) === alvo,
+  )
+}
 
 const CONTROLE =
   'w-full rounded-md border border-borda-forte bg-superficie px-3 py-2 text-sm placeholder:text-tinta-fraca'
@@ -43,8 +60,9 @@ export function CampoCombo({
     : opcoes
 
   // Digitar exatamente o nome de algo que existe casa com ele, em vez de
-  // propor criar uma segunda peça com o mesmo nome.
-  const exata = opcoes.find((opcao) => normalizarTexto(opcao.texto) === alvo)
+  // propor criar uma segunda peça com o mesmo nome. Compara pela chave: o
+  // texto exibido pode trazer marca e unidade que ninguém digita.
+  const exata = casarExata(opcoes, alvo)
   const id = escolhido ?? exata?.id ?? null
   const podeCriar = permiteCriar && alvo.length > 0 && !exata
   const nomeNovo = id ? '' : podeCriar ? texto.trim() : ''
@@ -95,11 +113,16 @@ export function CampoCombo({
           placeholder={placeholder}
           value={texto}
           onChange={(evento) => {
-            setTexto(evento.target.value)
+            const digitado = evento.target.value
+            setTexto(digitado)
             setEscolhido(null)
             setAberto(true)
             setIndice(0)
-            avisar(null, evento.target.value.trim() || null)
+            // Avisa a mesma resolução que a renderização faz: quem digita o
+            // nome inteiro de algo que existe escolheu aquilo, e a tela não
+            // deve tratar a linha como cadastro novo.
+            const casada = casarExata(opcoes, normalizarTexto(digitado))
+            avisar(casada?.id ?? null, casada ? null : digitado.trim() || null)
           }}
           onFocus={() => setAberto(true)}
           // `onBlur` atrasado: o clique numa opção só chega depois do blur, e

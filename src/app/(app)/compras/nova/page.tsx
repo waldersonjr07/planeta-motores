@@ -30,6 +30,10 @@ export default async function PaginaNovaCompra() {
           pecas={pecas.map((p) => ({
             id: p.id,
             texto: `${p.nome}${p.marca ? ` ${p.marca}` : ''} (${p.unidade})`,
+            // O texto exibido traz marca e unidade; quem digita escreve só o
+            // nome. Sem a chave, digitar "Óleo 2 tempos" não casaria com
+            // "Óleo 2 tempos Ipiranga (L)" e proporia cadastrar outra peça.
+            chave: p.nome,
           }))}
           fornecedores={fornecedores.map((f) => ({ id: f.id, texto: f.nome }))}
           ordens={ordens.map((os) => ({
