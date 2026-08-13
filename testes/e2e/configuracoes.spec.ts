@@ -15,7 +15,7 @@ test('salva os dados da empresa e mantém depois de recarregar', async ({ page }
 
   await page.reload()
   await expect(page.getByLabel('Nome da empresa')).toHaveValue('Planeta Motores ME')
-  await expect(page.getByLabel('Telefone')).toHaveValue('1935241122')
+  await expect(page.getByLabel('Telefone')).toHaveValue('(19) 3524-1122')
 })
 
 test('recusa validade de orçamento zerada', async ({ page }) => {
