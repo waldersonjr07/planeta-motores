@@ -42,12 +42,20 @@ export function FormularioNovaOs({
   return (
     <form action={enviar} className="flex flex-col gap-5">
       <GradeFormulario>
+        {/*
+          Dentro do remonte como todo o resto: fora dele, o reset do React 19
+          devolvia o seletor ao `defaultValue`, que com a carteira cadastrada é
+          "Selecione…". A tela ficava dizendo que nenhum equipamento foi
+          escolhido, com o bloco de cadastro rápido aberto logo abaixo, e o
+          `required` barrava o segundo envio num campo que ninguém mexeu.
+        */}
         <CampoSelecao
+          key={tentativa}
           rotulo="Cliente e equipamento"
           nome="equipamento"
           required
           className="col-span-8"
-          defaultValue={equipamentos.length === 0 ? 'novo' : ''}
+          defaultValue={valores.equipamento || (equipamentos.length === 0 ? 'novo' : '')}
           onChange={(evento) => setClienteNovo(evento.target.value === 'novo')}
         >
           <option value="">Selecione…</option>

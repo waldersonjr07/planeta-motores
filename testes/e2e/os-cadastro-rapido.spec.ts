@@ -1,9 +1,28 @@
 import { expect, test } from '@playwright/test'
+import { db } from '../../src/db'
+import { clientes, equipamentos } from '../../src/db/schema'
 import { prepararSessao } from './ajuda'
 
 test.beforeEach(async ({ page }) => {
   await prepararSessao(page)
 })
+
+/**
+ * Com a carteira vazia o seletor de equipamento já nasce em "novo", e o reset
+ * do React 19 o devolve a esse mesmo valor — o único cenário em que perder a
+ * escolha não faz mal. Quem semeia um equipamento exercita a oficina de
+ * verdade, onde o padrão é "Selecione…".
+ */
+async function semearEquipamento(): Promise<void> {
+  const [cliente] = await db.insert(clientes).values({ nome: 'Marcos Andrade' }).returning()
+  await db.insert(equipamentos).values({
+    clienteId: cliente.id,
+    tipoMotor: '2T',
+    aplicacao: 'rocadeira',
+    marca: 'Stihl',
+    modelo: 'FS 220',
+  })
+}
 
 test('erro de validação não apaga o que já foi digitado', async ({ page }) => {
   await page.goto('/ordens-servico/nova')
@@ -53,7 +72,9 @@ test('máquina "Outro" sem dizer qual acusa o erro e mantém os dados', async ({
   await expect(page.getByLabel('Nome do cliente')).toHaveValue('João da Silva')
 })
 
-test('corrigido o erro, a OS abre', async ({ page }) => {
+test('corrigido o erro, a OS abre mesmo com carteira cadastrada', async ({ page }) => {
+  await semearEquipamento()
+
   await page.goto('/ordens-servico/nova')
   await page.getByLabel('Cliente e equipamento').selectOption('novo')
 
@@ -70,6 +91,10 @@ test('corrigido o erro, a OS abre', async ({ page }) => {
   })
   await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
   await expect(page.getByText('Diga qual é a máquina')).toBeVisible()
+
+  // O seletor tem de voltar em "novo": se voltar a "Selecione…", o `required`
+  // barra o segundo envio apontando um campo que a Lucilene não mexeu.
+  await expect(page.getByLabel('Cliente e equipamento')).toHaveValue('novo')
 
   await page.getByLabel('Nome do cliente').fill('João da Silva')
   await page.getByLabel('Qual máquina?').fill('Cortador de grama')
