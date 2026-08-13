@@ -52,7 +52,7 @@ export async function registrarCompra(
         const chave = normalizarTexto(item.pecaNome)
         pecaId = criadasPorNome.get(chave) ?? null
         if (!pecaId) {
-          pecaId = (await criarPecaMinima(item.pecaNome, item.unidade, tx)).id
+          pecaId = (await criarPecaMinima(item.pecaNome, item.unidade ?? 'un', tx)).id
           criadasPorNome.set(chave, pecaId)
         }
       }

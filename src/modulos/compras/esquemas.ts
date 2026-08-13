@@ -32,5 +32,24 @@ export const entradaCompra = z.object({
   itens: z.array(entradaItemCompra).min(1, 'Inclua ao menos uma peça na compra'),
 })
 
-export type EntradaCompra = z.infer<typeof entradaCompra>
-export type EntradaItemCompra = z.infer<typeof entradaItemCompra>
+/*
+ * Tipo de entrada, não de saída: `numeroDocumento`/`observacoes`/`unidade` usam
+ * `.transform()`/`.default()`, que o Zod só resolve dentro do `.parse()`. Como
+ * `registrarCompra` é chamado direto (sem passar pelo `entradaCompra.safeParse`)
+ * pelos testes de integração e por quem mais compuser a função, o contrato real
+ * dos parâmetros é o de entrada — mais permissivo — e não o de saída.
+ *
+ * `numeroDocumento`/`observacoes` precisam do ajuste extra abaixo: a entrada
+ * pura do Zod só aceita `string | undefined` para eles, mas `acaoRegistrarCompra`
+ * passa adiante o resultado já processado do `safeParse` — a saída do
+ * `.transform()`, que é `string | null`. `registrarCompra` trata as duas formas
+ * do mesmo jeito (sempre com `?? null`), então o tipo aceita ambas.
+ */
+export type EntradaCompra = Omit<
+  z.input<typeof entradaCompra>,
+  'numeroDocumento' | 'observacoes'
+> & {
+  numeroDocumento?: string | null
+  observacoes?: string | null
+}
+export type EntradaItemCompra = z.input<typeof entradaItemCompra>

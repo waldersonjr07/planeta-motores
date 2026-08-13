@@ -91,7 +91,7 @@ test('fornecedor existente não é duplicado quando vem por id', async () => {
   expect(await db.select().from(fornecedores)).toHaveLength(1)
 })
 
-test('falha no meio não deixa peça nem fornecedor órfão', async () => {
+test('peça inexistente é recusada antes de abrir a transação, sem gravar nada', async () => {
   const r = await registrarCompra({
     fornecedorNome: 'Peças Rio Claro',
     data: '2026-08-11',
@@ -106,6 +106,32 @@ test('falha no meio não deixa peça nem fornecedor órfão', async () => {
   })
 
   expect(r.ok).toBe(false)
+  expect(await db.select().from(pecas)).toHaveLength(0)
+  expect(await db.select().from(fornecedores)).toHaveLength(0)
+  expect(await listarCompras()).toHaveLength(0)
+})
+
+test('falha dentro da transação não deixa peça, fornecedor nem compra órfãos', async () => {
+  // Ao contrário do teste acima, aqui as duas peças e o fornecedor já foram
+  // gravados (sem commit) dentro da mesma transação quando o segundo item
+  // estoura a coluna `integer` de custo — é o rollback de verdade que este
+  // teste prova, não a rejeição adiantada do pré-check de `pecaId`.
+  await expect(
+    registrarCompra({
+      fornecedorNome: 'Peças Rio Claro',
+      data: '2026-08-11',
+      itens: [
+        { pecaNome: 'Vela', unidade: 'un', quantidade: 1, custoUnitarioCentavos: 2800 },
+        {
+          pecaNome: 'Retentor',
+          unidade: 'un',
+          quantidade: 1,
+          custoUnitarioCentavos: 99_999_999_999,
+        },
+      ],
+    }),
+  ).rejects.toThrow()
+
   expect(await db.select().from(pecas)).toHaveLength(0)
   expect(await db.select().from(fornecedores)).toHaveLength(0)
   expect(await listarCompras()).toHaveLength(0)
