@@ -42,7 +42,7 @@ export async function acaoCriarOs(
   // abertura da OS, para não obrigar a sair da tela e voltar.
   if (selecionado === 'novo') {
     const analise = entradaOsRapida.safeParse(dados)
-    if (!analise.success) return falhaDeValidacao(analise.error)
+    if (!analise.success) return falhaDeValidacao(analise.error, dados)
 
     const r = await criarOsComClienteNovo(analise.data)
     if (!r.ok) return r
@@ -60,7 +60,7 @@ export async function acaoCriarOs(
     clienteId: par[0] ?? '',
     equipamentoId: par[1] ?? '',
   })
-  if (!analise.success) return falhaDeValidacao(analise.error)
+  if (!analise.success) return falhaDeValidacao(analise.error, dados)
 
   const r = await criarOs(analise.data)
   if (!r.ok) return r

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { Fragment, useActionState, useEffect, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, CampoTexto, GradeFormulario } from '@/componentes/campo'
 import { CampoMascarado } from '@/componentes/campo-mascarado'
@@ -18,6 +18,17 @@ export function FormularioNovaOs({
   const [clienteNovo, setClienteNovo] = useState(equipamentos.length === 0)
   const [aplicacaoOutro, setAplicacaoOutro] = useState(false)
   const campos = resultado && !resultado.ok ? (resultado.campos ?? {}) : {}
+  const valores = resultado && !resultado.ok ? (resultado.valores ?? {}) : {}
+
+  /*
+   * O React 19 reseta o formulário quando a ação termina. Repor só o
+   * `defaultValue` não basta: trocar essa prop não altera um input já montado.
+   * A `key` força o remonte, e aí cada campo nasce já com o valor devolvido.
+   */
+  const [tentativa, setTentativa] = useState(0)
+  useEffect(() => {
+    if (resultado && !resultado.ok) setTentativa((n) => n + 1)
+  }, [resultado])
 
   // Agrupa por cliente para o <optgroup>: a Lucilene procura pelo dono do
   // motor, não pelo motor solto.
@@ -68,84 +79,107 @@ export function FormularioNovaOs({
           </div>
 
           <GradeFormulario>
-            <Campo
-              rotulo="Nome do cliente"
-              nome="nomeCliente"
-              required={clienteNovo}
-              className="col-span-6"
-              erro={campos.nomeCliente}
-            />
-            <CampoMascarado
-              rotulo="CPF/CNPJ"
-              nome="documentoCliente"
-              mascara="documento"
-              className="col-span-3"
-              erro={campos.documentoCliente}
-            />
-            <CampoMascarado
-              rotulo="Telefone"
-              nome="telefoneCliente"
-              mascara="telefone"
-              className="col-span-3"
-              erro={campos.telefoneCliente}
-            />
-
-            <CampoSelecao
-              rotulo="Máquina"
-              nome="aplicacao"
-              className="col-span-3"
-              onChange={(evento) => setAplicacaoOutro(evento.target.value === 'outro')}
-              opcoes={Object.entries(APLICACOES).map(([valor, texto]) => ({
-                valor,
-                texto,
-              }))}
-            />
-
-            {aplicacaoOutro && (
+            <Fragment key={tentativa}>
               <Campo
-                rotulo="Qual máquina?"
-                nome="aplicacaoOutra"
-                required
-                className="col-span-4"
-                placeholder="Cortador de grama, compactador…"
-                erro={campos.aplicacaoOutra}
+                rotulo="Nome do cliente"
+                nome="nomeCliente"
+                required={clienteNovo}
+                className="col-span-6"
+                defaultValue={valores.nomeCliente ?? ''}
+                erro={campos.nomeCliente}
               />
-            )}
-            <CampoSelecao
-              rotulo="Motor"
-              nome="tipoMotor"
-              className="col-span-2"
-              opcoes={[
-                { valor: '2T', texto: '2 tempos' },
-                { valor: '4T', texto: '4 tempos' },
-              ]}
-            />
-            <Campo rotulo="Marca" nome="marca" className="col-span-3" />
-            <Campo rotulo="Modelo" nome="modelo" className="col-span-4" />
+              <CampoMascarado
+                rotulo="CPF/CNPJ"
+                nome="documentoCliente"
+                mascara="documento"
+                className="col-span-3"
+                defaultValue={valores.documentoCliente ?? ''}
+                erro={campos.documentoCliente}
+              />
+              <CampoMascarado
+                rotulo="Telefone"
+                nome="telefoneCliente"
+                mascara="telefone"
+                className="col-span-3"
+                defaultValue={valores.telefoneCliente ?? ''}
+                erro={campos.telefoneCliente}
+              />
+
+              <CampoSelecao
+                rotulo="Máquina"
+                nome="aplicacao"
+                className="col-span-3"
+                defaultValue={valores.aplicacao || undefined}
+                onChange={(evento) => setAplicacaoOutro(evento.target.value === 'outro')}
+                opcoes={Object.entries(APLICACOES).map(([valor, texto]) => ({
+                  valor,
+                  texto,
+                }))}
+              />
+
+              {aplicacaoOutro && (
+                <Campo
+                  rotulo="Qual máquina?"
+                  nome="aplicacaoOutra"
+                  required
+                  className="col-span-4"
+                  placeholder="Cortador de grama, compactador…"
+                  defaultValue={valores.aplicacaoOutra ?? ''}
+                  erro={campos.aplicacaoOutra}
+                />
+              )}
+              <CampoSelecao
+                rotulo="Motor"
+                nome="tipoMotor"
+                className="col-span-2"
+                defaultValue={valores.tipoMotor || undefined}
+                opcoes={[
+                  { valor: '2T', texto: '2 tempos' },
+                  { valor: '4T', texto: '4 tempos' },
+                ]}
+              />
+              <Campo
+                rotulo="Marca"
+                nome="marca"
+                className="col-span-3"
+                defaultValue={valores.marca ?? ''}
+              />
+              <Campo
+                rotulo="Modelo"
+                nome="modelo"
+                className="col-span-4"
+                defaultValue={valores.modelo ?? ''}
+              />
+            </Fragment>
           </GradeFormulario>
         </div>
       )}
 
       <GradeFormulario>
-        <CampoTexto
-          rotulo="Problema relatado pelo cliente"
-          nome="problemaRelatado"
-          className="col-span-12"
-          placeholder="Não pega a frio, perde força no corte…"
-        />
-        <CampoTexto
-          rotulo="Acessórios recebidos"
-          nome="acessoriosRecebidos"
-          rows={2}
-          className="col-span-6"
-          placeholder="Chave, alça, protetor…"
-        />
-        <CampoTexto
-          rotulo="Observações"
-          nome="observacoes"
-          rows={2}
-          className="col-span-6"
-        />
+        <Fragment key={tentativa}>
+          <CampoTexto
+            rotulo="Problema relatado pelo cliente"
+            nome="problemaRelatado"
+            className="col-span-12"
+            placeholder="Não pega a frio, perde força no corte…"
+            defaultValue={valores.problemaRelatado ?? ''}
+          />
+          <CampoTexto
+            rotulo="Acessórios recebidos"
+            nome="acessoriosRecebidos"
+            rows={2}
+            className="col-span-6"
+            placeholder="Chave, alça, protetor…"
+            defaultValue={valores.acessoriosRecebidos ?? ''}
+          />
+          <CampoTexto
+            rotulo="Observações"
+            nome="observacoes"
+            rows={2}
+            className="col-span-6"
+            defaultValue={valores.observacoes ?? ''}
+          />
+        </Fragment>
       </GradeFormulario>
 
       {resultado && !resultado.ok && <MensagemErro>{resultado.erro}</MensagemErro>}
