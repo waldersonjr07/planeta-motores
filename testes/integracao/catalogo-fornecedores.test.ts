@@ -1,4 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
+import { db } from '../../src/db'
+import { fornecedores } from '../../src/db/schema'
 import {
   listarFornecedores,
   obterFornecedor,
@@ -7,6 +10,7 @@ import { entradaFornecedor } from '../../src/modulos/catalogo/fornecedores-esque
 import {
   atualizarFornecedor,
   criarFornecedor,
+  criarFornecedorMinimo,
   definirAtivoFornecedor,
 } from '../../src/modulos/catalogo/fornecedores-operacoes'
 import { limparBanco } from '../ajuda/banco'
@@ -57,4 +61,16 @@ test('atualizar fornecedor inexistente falha sem estourar', async () => {
   expect(r.ok).toBe(false)
   if (r.ok) return
   expect(r.erro).toBe('Fornecedor não encontrado.')
+})
+
+test('criarFornecedorMinimo cria só com o nome', async () => {
+  const { id } = await criarFornecedorMinimo('Peças Rio Claro')
+
+  const [fornecedor] = await db
+    .select()
+    .from(fornecedores)
+    .where(eq(fornecedores.id, id))
+  expect(fornecedor.nome).toBe('Peças Rio Claro')
+  expect(fornecedor.ativo).toBe(true)
+  expect(fornecedor.telefone).toBeNull()
 })

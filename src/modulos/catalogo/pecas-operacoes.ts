@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { pecas } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
+import type { Transacao } from '@/modulos/estoque/operacoes'
 import {
   paraEntradaPeca,
   type EntradaPeca,
@@ -54,4 +55,23 @@ export async function definirAtivoPeca(id: string, ativo: boolean): Promise<Resu
 
   if (alteradas.length === 0) return falha('Peça não encontrada.')
   return sucesso(null)
+}
+
+/**
+ * Cadastro na hora, feito de dentro da compra. Só o nome e a unidade — o resto
+ * tem valor padrão na tabela, e a Lucilene completa depois em Estoque se a
+ * peça passar a controlar saldo. Aceita transação para que a peça e a compra
+ * entrem juntas ou não entrem.
+ */
+export async function criarPecaMinima(
+  nome: string,
+  unidade: 'un' | 'L' | 'mL',
+  tx?: Transacao,
+): Promise<{ id: string }> {
+  const executor = tx ?? db
+  const [criada] = await executor
+    .insert(pecas)
+    .values({ nome: nome.trim(), unidade })
+    .returning({ id: pecas.id })
+  return { id: criada.id }
 }

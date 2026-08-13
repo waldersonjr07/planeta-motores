@@ -1,9 +1,13 @@
+import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
+import { db } from '../../src/db'
+import { pecas } from '../../src/db/schema'
 import { listarPecas, obterPeca } from '../../src/modulos/catalogo/pecas-consultas'
 import { entradaPeca } from '../../src/modulos/catalogo/pecas-esquemas'
 import {
   atualizarPeca,
   criarPeca,
+  criarPecaMinima,
   definirAtivoPeca,
 } from '../../src/modulos/catalogo/pecas-operacoes'
 import { limparBanco } from '../ajuda/banco'
@@ -77,4 +81,29 @@ test('atualizar peça inexistente falha sem estourar', async () => {
   expect(r.ok).toBe(false)
   if (r.ok) return
   expect(r.erro).toBe('Peça não encontrada.')
+})
+
+test('criarPecaMinima cria com o nome e a unidade, e o resto no padrão', async () => {
+  const { id } = await criarPecaMinima('Vela NGK BPMR7A', 'un')
+
+  const [peca] = await db.select().from(pecas).where(eq(pecas.id, id))
+  expect(peca.nome).toBe('Vela NGK BPMR7A')
+  expect(peca.unidade).toBe('un')
+  expect(peca.controlaSaldo).toBe(false)
+  expect(peca.ativo).toBe(true)
+  expect(peca.ultimoCustoCentavos).toBeNull()
+})
+
+test('criarPecaMinima respeita a unidade de volume', async () => {
+  const { id } = await criarPecaMinima('Óleo 2T Motul', 'L')
+
+  const [peca] = await db.select().from(pecas).where(eq(pecas.id, id))
+  expect(peca.unidade).toBe('L')
+})
+
+test('criarPecaMinima apara o nome', async () => {
+  const { id } = await criarPecaMinima('  Bujão  ', 'un')
+
+  const [peca] = await db.select().from(pecas).where(eq(pecas.id, id))
+  expect(peca.nome).toBe('Bujão')
 })
