@@ -65,3 +65,15 @@ test('gera o recibo depois do pagamento', async () => {
 test('OS inexistente não gera documento', async () => {
   expect(await gerarDocumento('orcamento', '00000000-0000-0000-0000-000000000000')).toBeNull()
 })
+
+test('os três documentos saem como PDF válido', async () => {
+  const { osId } = await cenarioOs()
+
+  for (const tipo of ['comprovante', 'orcamento', 'recibo'] as const) {
+    const documento = await gerarDocumento(tipo, osId)
+    expect(documento).not.toBeNull()
+    expect(documento?.conteudo.subarray(0, 4).toString()).toBe('%PDF')
+    expect(documento?.conteudo.length).toBeGreaterThan(2000)
+    expect(documento?.nomeArquivo).toMatch(/\.pdf$/)
+  }
+})

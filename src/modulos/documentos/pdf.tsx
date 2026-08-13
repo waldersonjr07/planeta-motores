@@ -1,14 +1,23 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { formatarData } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
+import { valorPorExtenso } from '@/lib/extenso'
+import { mascararTelefone } from '@/lib/mascaras'
 import { obterConfiguracoes } from '@/modulos/configuracoes/consultas'
 import { resumoDeCobrancaDaOs } from '@/modulos/financeiro/consultas'
 import { obterOs, type OsCompleta } from '@/modulos/os/consultas'
 import {
+  Assinaturas,
+  Bloco,
   Cabecalho,
+  CabecalhoCompacto,
+  CaixaDeTotais,
   Campo,
+  Condicoes,
   Document,
+  FaixaDocumento,
   Page,
+  Rodape,
   TabelaDeItens,
   Text,
   View,
@@ -24,39 +33,66 @@ export const TIPOS: Record<TipoDocumento, string> = {
   recibo: 'Recibo de pagamento',
 }
 
+function BlocoCliente({ os }: { os: OsCompleta }) {
+  return (
+    <Bloco rotulo="Dados do cliente">
+      <Campo rotulo="Nome" valor={os.cliente.nome} />
+      {os.cliente.telefone ? (
+        <Campo rotulo="Telefone" valor={mascararTelefone(os.cliente.telefone)} />
+      ) : null}
+    </Bloco>
+  )
+}
+
+function BlocoEquipamento({ os }: { os: OsCompleta }) {
+  return (
+    <Bloco rotulo="Equipamento">
+      <Campo rotulo="Descrição" valor={os.equipamento.descricao} />
+      {os.equipamento.numeroSerie ? (
+        <Campo rotulo="Número de série" valor={os.equipamento.numeroSerie} />
+      ) : null}
+    </Bloco>
+  )
+}
+
 function Comprovante({ os, empresa }: { os: OsCompleta; empresa: DadosEmpresa }) {
+  const documento = `Comprovante ${os.numero}`
+
   return (
     <Document>
       <Page size="A4" style={estilos.pagina}>
-        <Cabecalho empresa={empresa} titulo={`Comprovante de recebimento — OS ${os.numero}`} />
+        <CabecalhoCompacto empresa={empresa} documento={documento} />
+        <Cabecalho empresa={empresa} />
+        <FaixaDocumento
+          titulo="Comprovante de recebimento"
+          numero={os.numero}
+          emissao={os.recebidoEm}
+        />
 
-        <View style={estilos.bloco}>
-          <Campo rotulo="Cliente" valor={os.cliente.nome} />
-          <Campo rotulo="Equipamento" valor={os.equipamento.descricao} />
-          {os.equipamento.numeroSerie ? (
-            <Campo rotulo="Número de série" valor={os.equipamento.numeroSerie} />
-          ) : null}
-          <Campo rotulo="Recebido em" valor={formatarData(os.recebidoEm)} />
-        </View>
+        <BlocoCliente os={os} />
+        <BlocoEquipamento os={os} />
 
-        <View style={estilos.bloco}>
-          <Text style={estilos.titulo}>Problema relatado</Text>
+        <Bloco rotulo="Problema relatado">
           <Text>{os.problemaRelatado ?? 'Não informado.'}</Text>
-        </View>
+        </Bloco>
 
-        <View style={estilos.bloco}>
-          <Text style={estilos.titulo}>Acessórios recebidos</Text>
+        <Bloco rotulo="Acessórios recebidos">
           <Text>{os.acessoriosRecebidos ?? 'Nenhum.'}</Text>
-        </View>
+        </Bloco>
 
-        <Text style={estilos.rodape}>
-          Este comprovante atesta apenas o recebimento do equipamento. O orçamento é enviado
-          depois do diagnóstico e o serviço só começa após a aprovação do cliente.
-        </Text>
+        <Condicoes>
+          Este comprovante atesta apenas o recebimento do equipamento. O orçamento é
+          enviado depois do diagnóstico e o serviço só começa após a aprovação do
+          cliente.
+        </Condicoes>
 
-        <View style={estilos.assinatura}>
-          <Text>Assinatura do cliente</Text>
-        </View>
+        <Assinaturas
+          cliente={os.cliente.nome}
+          documento={os.cliente.documento ?? null}
+          empresaNome={empresa.empresaNome}
+        />
+
+        <Rodape empresa={empresa} />
       </Page>
     </Document>
   )
@@ -73,54 +109,62 @@ function Orcamento({
 }) {
   const pecas = os.itens.filter((item) => item.tipo === 'peca')
   const servicos = os.itens.filter((item) => item.tipo === 'servico')
+  const documento = `Orçamento ${os.numero}`
+
+  const linhas = [
+    { rotulo: 'Peças', valor: formatarReais(os.totais.pecasCentavos) },
+    { rotulo: 'Serviços', valor: formatarReais(os.totais.servicosCentavos) },
+  ]
+  if (os.totais.descontoCentavos > 0) {
+    linhas.push({
+      rotulo: 'Desconto',
+      valor: `-${formatarReais(os.totais.descontoCentavos)}`,
+    })
+  }
 
   return (
     <Document>
       <Page size="A4" style={estilos.pagina}>
-        <Cabecalho empresa={empresa} titulo={`Orçamento — OS ${os.numero}`} />
+        <CabecalhoCompacto empresa={empresa} documento={documento} />
+        <Cabecalho empresa={empresa} />
+        <FaixaDocumento
+          titulo="Orçamento"
+          numero={os.numero}
+          emissao={os.orcadoEm ?? new Date()}
+          validadeDias={validadeDias}
+        />
 
-        <View style={estilos.bloco}>
-          <Campo rotulo="Cliente" valor={os.cliente.nome} />
-          <Campo rotulo="Equipamento" valor={os.equipamento.descricao} />
-          <Campo rotulo="Data" valor={formatarData(os.orcadoEm ?? new Date())} />
-          <Campo rotulo="Validade" valor={`${validadeDias} dias`} />
-        </View>
+        <BlocoCliente os={os} />
+        <BlocoEquipamento os={os} />
 
         {os.diagnostico ? (
-          <View style={estilos.bloco}>
-            <Text style={estilos.titulo}>Diagnóstico</Text>
+          <Bloco rotulo="Diagnóstico">
             <Text>{os.diagnostico}</Text>
-          </View>
+          </Bloco>
         ) : null}
 
         <TabelaDeItens titulo="Peças" itens={pecas} />
         <TabelaDeItens titulo="Serviços" itens={servicos} />
 
-        <View style={estilos.totais}>
-          <View style={estilos.linha}>
-            <Text style={estilos.rotulo}>Peças</Text>
-            <Text>{formatarReais(os.totais.pecasCentavos)}</Text>
-          </View>
-          <View style={estilos.linha}>
-            <Text style={estilos.rotulo}>Serviços</Text>
-            <Text>{formatarReais(os.totais.servicosCentavos)}</Text>
-          </View>
-          {os.totais.descontoCentavos > 0 ? (
-            <View style={estilos.linha}>
-              <Text style={estilos.rotulo}>Desconto</Text>
-              <Text>-{formatarReais(os.totais.descontoCentavos)}</Text>
-            </View>
-          ) : null}
-          <View style={estilos.total}>
-            <Text>Total</Text>
-            <Text>{formatarReais(os.totais.totalCentavos)}</Text>
-          </View>
+        <CaixaDeTotais linhas={linhas} total={os.totais.totalCentavos} />
+
+        <Condicoes>
+          Orçamento sujeito a revisão caso o desmonte revele defeito não visível no
+          diagnóstico. Qualquer alteração é comunicada antes da execução. Validade de{' '}
+          {validadeDias} dias a contar da emissão.
+        </Condicoes>
+
+        <View style={{ marginTop: 12 }}>
+          <Text style={estilos.titulo}>DE ACORDO — ASSINATURA E DATA</Text>
         </View>
 
-        <Text style={estilos.rodape}>
-          Orçamento sujeito a revisão caso o desmonte revele defeito não visível no
-          diagnóstico. Qualquer alteração é comunicada antes da execução.
-        </Text>
+        <Assinaturas
+          cliente={os.cliente.nome}
+          documento={os.cliente.documento ?? null}
+          empresaNome={empresa.empresaNome}
+        />
+
+        <Rodape empresa={empresa} />
       </Page>
     </Document>
   )
@@ -137,42 +181,45 @@ function Recibo({
   pagoCentavos: number
   saldoCentavos: number
 }) {
+  const documento = `Recibo ${os.numero}`
+
+  const linhas = [
+    { rotulo: 'Total do serviço', valor: formatarReais(os.totais.totalCentavos) },
+  ]
+  if (saldoCentavos > 0) {
+    linhas.push({ rotulo: 'Saldo em aberto', valor: formatarReais(saldoCentavos) })
+  }
+
   return (
     <Document>
       <Page size="A4" style={estilos.pagina}>
-        <Cabecalho empresa={empresa} titulo={`Recibo — OS ${os.numero}`} />
+        <CabecalhoCompacto empresa={empresa} documento={documento} />
+        <Cabecalho empresa={empresa} />
+        <FaixaDocumento titulo="Recibo" numero={os.numero} emissao={new Date()} />
 
-        <View style={estilos.bloco}>
-          <Campo rotulo="Cliente" valor={os.cliente.nome} />
-          <Campo rotulo="Equipamento" valor={os.equipamento.descricao} />
-          <Campo rotulo="Data" valor={formatarData(new Date())} />
-        </View>
+        <BlocoCliente os={os} />
+        <BlocoEquipamento os={os} />
 
-        <View style={estilos.bloco}>
-          <Text style={estilos.titulo}>Pagamentos recebidos</Text>
-          <View style={estilos.linha}>
-            <Text style={estilos.rotulo}>Total do serviço</Text>
-            <Text>{formatarReais(os.totais.totalCentavos)}</Text>
-          </View>
-          <View style={estilos.linha}>
-            <Text style={estilos.rotulo}>Valor pago</Text>
-            <Text>{formatarReais(pagoCentavos)}</Text>
-          </View>
-          <View style={estilos.total}>
-            <Text>{saldoCentavos > 0 ? 'Saldo em aberto' : 'Saldo'}</Text>
-            <Text>{formatarReais(saldoCentavos)}</Text>
-          </View>
-        </View>
+        <CaixaDeTotais linhas={linhas} total={pagoCentavos} />
 
-        <Text style={estilos.rodape}>
+        {/* Valor por extenso: costume de recibo no Brasil. */}
+        <Bloco rotulo="Valor recebido por extenso">
+          <Text>{valorPorExtenso(pagoCentavos)}.</Text>
+        </Bloco>
+
+        <Condicoes>
           {saldoCentavos > 0
-            ? 'Recibo parcial: consta saldo em aberto referente a esta ordem de serviço.'
+            ? `Recibo parcial: consta saldo em aberto de ${formatarReais(saldoCentavos)} referente a esta ordem de serviço.`
             : 'Recebemos o valor acima, dando plena quitação desta ordem de serviço.'}
-        </Text>
+        </Condicoes>
 
-        <View style={estilos.assinatura}>
-          <Text>{empresa.empresaNome}</Text>
-        </View>
+        <Assinaturas
+          cliente={os.cliente.nome}
+          documento={os.cliente.documento ?? null}
+          empresaNome={empresa.empresaNome}
+        />
+
+        <Rodape empresa={empresa} />
       </Page>
     </Document>
   )
@@ -199,7 +246,11 @@ export async function gerarDocumento(
     documento = <Comprovante os={os} empresa={empresa} />
   } else if (tipo === 'orcamento') {
     documento = (
-      <Orcamento os={os} empresa={empresa} validadeDias={configuracoes.orcamentoValidadeDias} />
+      <Orcamento
+        os={os}
+        empresa={empresa}
+        validadeDias={configuracoes.orcamentoValidadeDias}
+      />
     )
   } else {
     const cobranca = await resumoDeCobrancaDaOs(osId)

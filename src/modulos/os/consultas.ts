@@ -33,7 +33,7 @@ export type OsResumo = {
 }
 
 export type OsCompleta = typeof ordensServico.$inferSelect & {
-  cliente: { id: string; nome: string; telefone: string | null }
+  cliente: { id: string; nome: string; telefone: string | null; documento: string | null }
   equipamento: { id: string; descricao: string; numeroSerie: string | null }
   itens: (typeof osItens.$inferSelect)[]
   totais: TotaisOs
@@ -127,7 +127,12 @@ export async function obterOs(id: string): Promise<OsCompleta | null> {
   const [linha] = await db
     .select({
       os: ordensServico,
-      cliente: { id: clientes.id, nome: clientes.nome, telefone: clientes.telefone },
+      cliente: {
+        id: clientes.id,
+        nome: clientes.nome,
+        telefone: clientes.telefone,
+        documento: clientes.documento,
+      },
       equipamento: {
         id: equipamentos.id,
         tipoMotor: equipamentos.tipoMotor,
