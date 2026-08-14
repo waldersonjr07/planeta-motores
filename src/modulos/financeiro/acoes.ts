@@ -11,6 +11,16 @@ import {
   removerPagamento,
 } from './operacoes'
 
+/**
+ * Eco do que foi enviado, para a tela se remontar igual quando a validação
+ * reprova. Ver `EcoDoFormulario`.
+ */
+function objeto(formulario: FormData): Record<string, string> {
+  const dados: Record<string, string> = {}
+  for (const [chave, valor] of formulario.entries()) dados[chave] = String(valor)
+  return dados
+}
+
 function revalidarFinanceiro(osId?: string) {
   revalidatePath('/financeiro')
   revalidatePath('/painel')
@@ -49,8 +59,10 @@ export async function acaoRegistrarDespesa(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  const eco = { valores: objeto(formulario) }
+
   const valorCentavos = parsearReais(String(formulario.get('valor') ?? ''))
-  if (valorCentavos === null) return falha('Informe um valor como 1.250,50.')
+  if (valorCentavos === null) return falha('Informe um valor como 1.250,50.', eco)
 
   const analise = entradaDespesa.safeParse({
     data: String(formulario.get('data') ?? ''),
@@ -59,7 +71,7 @@ export async function acaoRegistrarDespesa(
     valorCentavos,
     fornecedorId: String(formulario.get('fornecedorId') ?? '') || null,
   })
-  if (!analise.success) return falhaDeValidacao(analise.error)
+  if (!analise.success) return falhaDeValidacao(analise.error, eco)
 
   const r = await registrarDespesa(analise.data)
   if (r.ok) revalidarFinanceiro()

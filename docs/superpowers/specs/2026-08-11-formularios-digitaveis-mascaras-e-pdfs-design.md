@@ -339,6 +339,24 @@ faz o valor voltar. Na compra, cada linha de item recebe
 O `CampoCombo` não tem `defaultValue`: guarda o texto em estado. Para participar
 do remonte ele recebe `idInicial` e `textoInicial`, lidos só na montagem.
 
+### Estado de React que espelha um campo não controlado
+
+Vários formulários guardam num `useState` o que um `<select>` já diz, para
+revelar um campo dependente: a categoria "Outros" revela "Especifique", "Cliente
+novo" revela o cadastro rápido, a máquina "Outro" revela "Qual máquina?", a peça
+nova revela a unidade. Esse estado **diverge do DOM depois do reset** — o campo
+volta ao `defaultValue` e o estado não.
+
+Padrão único do projeto, um só para os quatro casos:
+
+> O estado que espelha um campo mora **dentro** do bloco que a `key={tentativa}`
+> remonta, e seu `useState` inicializa do **mesmo eco** que alimenta os
+> `defaultValue` vizinhos. Estado que não espelha o DOM — quantas linhas de item
+> a compra tem — fica de fora, para sobreviver ao remonte.
+
+Na prática o bloco é um componente próprio (`CamposDaOs`, `CamposDaDespesa`,
+`LinhaDeItem`), porque só a montagem de um componente reinicia um `useState`.
+
 Aplicado em:
 
 - `src/app/(app)/ordens-servico/nova/formulario.tsx` — o pedido

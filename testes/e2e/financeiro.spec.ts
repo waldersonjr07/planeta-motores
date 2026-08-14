@@ -104,6 +104,34 @@ test('o campo de descrição só aparece na categoria Outros', async ({ page }) 
   await expect(secao.getByLabel('Especifique (opcional)')).toHaveCount(0)
 })
 
+test('valor inválido não desencontra a categoria do campo Especifique', async ({
+  page,
+}) => {
+  await page.goto('/financeiro')
+  const secao = page.getByRole('region', { name: 'Despesas' })
+
+  await secao.getByLabel('Categoria').selectOption('outros')
+  await secao.getByLabel('Especifique (opcional)').fill('Conserto do portão')
+  await secao.getByLabel('Valor').fill('abc')
+  await secao.getByRole('button', { name: 'Lançar despesa' }).click()
+
+  await expect(secao.getByText('Informe um valor como 1.250,50.')).toBeVisible()
+
+  // Seletor e campo têm de continuar dizendo a mesma coisa: "Especifique"
+  // aberto ao lado de uma categoria que não é "Outros" grava descrição livre
+  // numa despesa de Ferramenta.
+  await expect(secao.getByLabel('Categoria')).toHaveValue('outros')
+  await expect(secao.getByLabel('Especifique (opcional)')).toHaveValue(
+    'Conserto do portão',
+  )
+
+  await secao.getByLabel('Valor').fill('180,00')
+  await secao.getByRole('button', { name: 'Lançar despesa' }).click()
+
+  const linha = page.getByRole('row').filter({ hasText: 'Conserto do portão' })
+  await expect(linha.getByRole('cell', { name: 'Outros' })).toBeVisible()
+})
+
 test('despesa de energia sem descrição é lançada e listada com travessão', async ({
   page,
 }) => {

@@ -30,9 +30,9 @@ export function FormularioCompra({
   hoje: string
 }) {
   const [resultado, enviar, pendente] = useActionState(acaoRegistrarCompra, null)
+  // Fora do remonte de propósito: quantas linhas existem não é campo do
+  // formulário, e perder as linhas acrescentadas seria pior que o defeito.
   const [linhas, setLinhas] = useState([0])
-  // Guarda quais linhas estão criando peça nova, para revelar a unidade.
-  const [pecaNova, setPecaNova] = useState<Record<number, boolean>>({})
 
   const valores = resultado && !resultado.ok ? (resultado.valores ?? {}) : {}
   const listas = resultado && !resultado.ok ? (resultado.listas ?? {}) : {}
@@ -112,66 +112,18 @@ export function FormularioCompra({
           os campos, então a posição na lista é a posição na tela.
         */}
         {linhas.map((linha) => (
-          <GradeFormulario key={`${tentativa}:${linha}`}>
-            <CampoCombo
-              rotulo="Peça"
-              nome="peca"
-              opcoes={pecas}
-              permiteCriar
-              rotuloCriar={(texto) => `Cadastrar “${texto}” como peça nova`}
-              placeholder="Digite para procurar ou cadastrar"
-              className="col-span-4"
-              aria-label={`Peça da linha ${linha + 1}`}
-              aoMudar={({ id, nome }) =>
-                setPecaNova((atual) => ({ ...atual, [linha]: !id && Boolean(nome) }))
-              }
-              idInicial={listas.pecaId?.[linha]}
-              textoInicial={textoDoEco(
-                pecas,
-                listas.pecaId?.[linha],
-                listas.pecaNome?.[linha],
-              )}
-            />
-
-            {/*
-              A oficina compra óleo em litro. Peça nova caindo em "un" por
-              omissão faria 0,5 L virar meia unidade no saldo.
-
-              Sempre renderizado, escondido por CSS quando não se aplica: se
-              saísse do DOM, `getAll('unidadeNova')` encurtaria e deixaria de
-              casar por posição com as outras listas da linha.
-            */}
-            <div className={pecaNova[linha] ? 'col-span-2' : 'hidden'}>
-              <CampoSelecao
-                rotulo="Unidade"
-                nome="unidadeNova"
-                aria-label={`Unidade da linha ${linha + 1}`}
-                defaultValue={listas.unidadeNova?.[linha] || undefined}
-                opcoes={[
-                  { valor: 'un', texto: 'Unidade' },
-                  { valor: 'L', texto: 'Litro' },
-                  { valor: 'mL', texto: 'Mililitro' },
-                ]}
-              />
-            </div>
-
-            <Campo
-              rotulo="Quantidade"
-              nome="quantidade"
-              defaultValue={listas.quantidade?.[linha] ?? '1'}
-              className="col-span-3"
-              aria-label={`Quantidade da linha ${linha + 1}`}
-            />
-
-            <Campo
-              rotulo="Custo unitário"
-              nome="custo"
-              placeholder="0,00"
-              defaultValue={listas.custo?.[linha] ?? ''}
-              className="col-span-3"
-              aria-label={`Custo unitário da linha ${linha + 1}`}
-            />
-          </GradeFormulario>
+          <LinhaDeItem
+            key={`${tentativa}:${linha}`}
+            posicao={linha}
+            pecas={pecas}
+            eco={{
+              pecaId: listas.pecaId?.[linha],
+              pecaNome: listas.pecaNome?.[linha],
+              unidadeNova: listas.unidadeNova?.[linha],
+              quantidade: listas.quantidade?.[linha],
+              custo: listas.custo?.[linha],
+            }}
+          />
         ))}
 
         <Botao
@@ -198,5 +150,86 @@ export function FormularioCompra({
         {pendente ? 'Registrando…' : 'Registrar compra'}
       </Botao>
     </form>
+  )
+}
+
+function LinhaDeItem({
+  posicao,
+  pecas,
+  eco,
+}: {
+  posicao: number
+  pecas: Opcao[]
+  eco: {
+    pecaId?: string
+    pecaNome?: string
+    unidadeNova?: string
+    quantidade?: string
+    custo?: string
+  }
+}) {
+  /*
+   * Espelha o combo para revelar o seletor de unidade. Mora na linha, que a
+   * `key` remonta, e nasce do mesmo eco que alimenta os `defaultValue`: como
+   * estado do formulário inteiro sobreviveria ao reset do React 19 e passaria
+   * a discordar do que está na tela.
+   */
+  const [pecaNova, setPecaNova] = useState(Boolean(eco.pecaNome))
+
+  return (
+    <GradeFormulario>
+      <CampoCombo
+        rotulo="Peça"
+        nome="peca"
+        opcoes={pecas}
+        permiteCriar
+        rotuloCriar={(texto) => `Cadastrar “${texto}” como peça nova`}
+        placeholder="Digite para procurar ou cadastrar"
+        className="col-span-4"
+        aria-label={`Peça da linha ${posicao + 1}`}
+        aoMudar={({ id, nome }) => setPecaNova(!id && Boolean(nome))}
+        idInicial={eco.pecaId}
+        textoInicial={textoDoEco(pecas, eco.pecaId, eco.pecaNome)}
+      />
+
+      {/*
+        A oficina compra óleo em litro. Peça nova caindo em "un" por omissão
+        faria 0,5 L virar meia unidade no saldo.
+
+        Sempre renderizado, escondido por CSS quando não se aplica: se saísse
+        do DOM, `getAll('unidadeNova')` encurtaria e deixaria de casar por
+        posição com as outras listas da linha.
+      */}
+      <div className={pecaNova ? 'col-span-2' : 'hidden'}>
+        <CampoSelecao
+          rotulo="Unidade"
+          nome="unidadeNova"
+          aria-label={`Unidade da linha ${posicao + 1}`}
+          defaultValue={eco.unidadeNova || undefined}
+          opcoes={[
+            { valor: 'un', texto: 'Unidade' },
+            { valor: 'L', texto: 'Litro' },
+            { valor: 'mL', texto: 'Mililitro' },
+          ]}
+        />
+      </div>
+
+      <Campo
+        rotulo="Quantidade"
+        nome="quantidade"
+        defaultValue={eco.quantidade ?? '1'}
+        className="col-span-3"
+        aria-label={`Quantidade da linha ${posicao + 1}`}
+      />
+
+      <Campo
+        rotulo="Custo unitário"
+        nome="custo"
+        placeholder="0,00"
+        defaultValue={eco.custo ?? ''}
+        className="col-span-3"
+        aria-label={`Custo unitário da linha ${posicao + 1}`}
+      />
+    </GradeFormulario>
   )
 }
