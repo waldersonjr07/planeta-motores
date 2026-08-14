@@ -12,13 +12,19 @@ export function FormularioDespesa({ hoje }: { hoje: string }) {
   const valores = resultado && !resultado.ok ? (resultado.valores ?? {}) : {}
 
   /*
-   * O React 19 reseta o formulário quando a ação termina. A `key` remonta o
-   * bloco de campos, que nasce de novo com os valores devolvidos pela ação —
-   * e, com ele, o estado que espelha o seletor de categoria.
+   * O React 19 reseta o formulário quando a ação termina — dê erro ou não.
+   * A `key` remonta o bloco de campos, que nasce de novo com os valores
+   * devolvidos pela ação — e, com ele, o estado que espelha o seletor de
+   * categoria. Diferente dos formulários de OS e de compra, este continua
+   * montado depois de um envio bem-sucedido (não há `redirect`), então o
+   * remonte tem de acontecer nos dois casos: só em erro, o `<select>` volta
+   * sozinho para "Ferramenta" enquanto `categoria` no estado React ficava em
+   * "outros", e o campo "Especifique" continuava aberto — pronto para gravar
+   * descrição livre numa despesa que a tela já dizia ser "Ferramenta".
    */
   const [tentativa, setTentativa] = useState(0)
   useEffect(() => {
-    if (resultado && !resultado.ok) setTentativa((n) => n + 1)
+    if (resultado) setTentativa((n) => n + 1)
   }, [resultado])
 
   return (

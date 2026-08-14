@@ -132,6 +132,35 @@ test('valor inválido não desencontra a categoria do campo Especifique', async 
   await expect(linha.getByRole('cell', { name: 'Outros' })).toBeVisible()
 })
 
+test('despesa "Outros" bem-sucedida remonta o formulário: categoria volta ao padrão e Especifique fecha', async ({
+  page,
+}) => {
+  await page.goto('/financeiro')
+  const secao = page.getByRole('region', { name: 'Despesas' })
+
+  await secao.getByLabel('Categoria').selectOption('outros')
+  await secao.getByLabel('Especifique (opcional)').fill('Conta de luz')
+  await secao.getByLabel('Valor').fill('180,00')
+  await secao.getByRole('button', { name: 'Lançar despesa' }).click()
+
+  await expect(page.getByRole('cell', { name: 'Conta de luz' })).toBeVisible()
+
+  // O React 19 reseta os campos não controlados mesmo quando a ação tem
+  // sucesso: o <select> volta sozinho para "Ferramenta". O remonte tem de
+  // acompanhar esse reset — senão o campo "Especifique" continua aberto ao
+  // lado de um seletor que já não diz "Outros".
+  await expect(secao.getByLabel('Categoria')).toHaveValue('ferramenta')
+  await expect(secao.getByLabel('Especifique (opcional)')).toHaveCount(0)
+
+  // A despesa seguinte, lançada nesse formulário já reposto, tem de gravar a
+  // categoria que a tela mostra — não a que sobrou de um estado desencontrado.
+  await secao.getByLabel('Valor').fill('45,00')
+  await secao.getByRole('button', { name: 'Lançar despesa' }).click()
+
+  const linha = page.getByRole('row').filter({ hasText: 'R$ 45,00' })
+  await expect(linha.getByRole('cell', { name: 'Ferramenta' })).toBeVisible()
+})
+
 test('despesa de energia sem descrição é lançada e listada com travessão', async ({
   page,
 }) => {
