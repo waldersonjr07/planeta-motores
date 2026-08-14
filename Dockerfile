@@ -32,6 +32,14 @@ COPY --from=construcao /app/src/db ./src/db
 COPY --from=construcao /app/src/modulos/auth ./src/modulos/auth
 COPY --from=construcao /app/node_modules ./node_modules
 
+# A pasta das fotos precisa existir e já pertencer ao usuário da aplicação
+# ANTES de o volume ser montado. Volume nomeado cujo ponto de montagem não
+# existe na imagem nasce de root, e o processo (uid 1001) não consegue escrever:
+# o primeiro envio de foto morreria com EACCES na VPS, sem nenhum teste pegar,
+# porque a suíte não roda dentro do contêiner. Existindo aqui, o Docker copia
+# dono e permissão daqui para o volume novo.
+RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
