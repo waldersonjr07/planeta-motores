@@ -49,8 +49,15 @@ POSTGRES_PASSWORD=<senha longa e aleatória>
 DOMINIO=sistema.planetamotores.com.br
 ```
 
-Gere a senha com `openssl rand -base64 32`. Ela não aparece em lugar nenhum
-além deste arquivo — guarde uma cópia junto com as suas outras senhas.
+Gere a senha com `openssl rand -hex 32` — **não** com `base64`. Esta senha é
+interpolada dentro de uma URL (`postgres://pm:SENHA@postgres:5432/pm`), e o
+alfabeto do base64 inclui a barra: uma `/` sorteada no meio da senha encerra a
+seção de autoridade da URL, e o driver passa a procurar um host que não existe.
+O erro que aparece não fala em senha, então custa caro de diagnosticar.
+Hexadecimal usa só `0-9a-f`, que atravessa a URL intacto.
+
+Ela não aparece em lugar nenhum além deste arquivo — guarde uma cópia junto com
+as suas outras senhas.
 
 ## 4. Subir
 
