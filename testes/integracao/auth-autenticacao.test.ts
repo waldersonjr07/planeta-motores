@@ -2,11 +2,17 @@ import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
 import { usuarios } from '../../src/db/schema'
 import { autenticar } from '../../src/modulos/auth/autenticacao'
+import { reiniciarLimitador } from '../../src/modulos/auth/limitador'
 import { gerarHash } from '../../src/modulos/auth/senha'
 import { buscarUsuarioPorToken } from '../../src/modulos/auth/sessao'
 import { limparBanco } from '../ajuda/banco'
 
-beforeEach(limparBanco)
+beforeEach(async () => {
+  await limparBanco()
+  // O freio de tentativas guarda estado entre chamadas: um caso não pode
+  // chegar ao seguinte com erro acumulado.
+  reiniciarLimitador()
+})
 
 async function criarLucilene(ativo = true) {
   await db.insert(usuarios).values({
