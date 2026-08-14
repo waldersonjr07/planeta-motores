@@ -200,7 +200,7 @@ function Recibo({
         <BlocoCliente os={os} />
         <BlocoEquipamento os={os} />
 
-        <CaixaDeTotais linhas={linhas} total={pagoCentavos} />
+        <CaixaDeTotais linhas={linhas} total={pagoCentavos} rotuloTotal="VALOR PAGO" />
 
         {/* Valor por extenso: costume de recibo no Brasil. */}
         <Bloco rotulo="Valor recebido por extenso">

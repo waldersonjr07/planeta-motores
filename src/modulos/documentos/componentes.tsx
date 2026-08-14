@@ -329,12 +329,20 @@ export function TabelaDeItens({
   )
 }
 
+/**
+ * `rotuloTotal` existe porque nem todo documento fecha num total devido. No
+ * recibo o número em destaque é o que o cliente pagou, e "TOTAL" logo abaixo
+ * de "Total do serviço" lê-se como o total da dívida — leitura errada num
+ * papel que ele guarda como prova de pagamento.
+ */
 export function CaixaDeTotais({
   linhas,
   total,
+  rotuloTotal = 'TOTAL',
 }: {
   linhas: { rotulo: string; valor: string }[]
   total: number
+  rotuloTotal?: string
 }) {
   return (
     <View style={estilos.totais}>
@@ -345,7 +353,7 @@ export function CaixaDeTotais({
         </View>
       ))}
       <View style={estilos.total}>
-        <Text>TOTAL</Text>
+        <Text>{rotuloTotal}</Text>
         <Text>{formatarReais(total)}</Text>
       </View>
     </View>
