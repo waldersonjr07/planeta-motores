@@ -127,6 +127,53 @@ test('peça digitada na hora entra no cadastro e no estoque', async ({ page }) =
   await expect(linha.getByRole('cell', { name: '4', exact: true })).toBeVisible()
 })
 
+test('erro de validação não apaga o cabeçalho nem as linhas da compra', async ({
+  page,
+}) => {
+  await page.goto('/compras/nova')
+
+  await page.getByLabel('Fornecedor').fill('Peças Rio')
+  await page.getByRole('option', { name: 'Peças Rio Claro' }).click()
+  await page.getByLabel('Nota / documento').fill('NF 1234')
+  await page.getByLabel('Observações').fill('Entrega parcial')
+
+  await page.getByLabel('Peça da linha 1').fill('Óleo 2 tempos')
+  await page.getByRole('option', { name: 'Óleo 2 tempos (L)' }).click()
+  await page.getByLabel('Quantidade da linha 1').fill('4')
+  await page.getByLabel('Custo unitário da linha 1').fill('30,00')
+
+  await page.getByRole('button', { name: 'Adicionar linha' }).click()
+  await page.getByLabel('Peça da linha 2').fill('Óleo Motul 800')
+  await page.getByRole('option', { name: /Cadastrar .*Óleo Motul 800/ }).click()
+  await page.getByLabel('Unidade da linha 2').selectOption('L')
+  await page.getByLabel('Quantidade da linha 2').fill('0,5')
+
+  // Custo da segunda linha em branco: reprova, e nada pode sumir da tela.
+  await page.getByRole('button', { name: 'Registrar compra' }).click()
+  await expect(page.getByText('Informe o custo da linha 2.')).toBeVisible()
+
+  await expect(page.getByLabel('Fornecedor')).toHaveValue('Peças Rio Claro')
+  await expect(page.getByLabel('Nota / documento')).toHaveValue('NF 1234')
+  await expect(page.getByLabel('Observações')).toHaveValue('Entrega parcial')
+  await expect(page.getByLabel('Peça da linha 1')).toHaveValue('Óleo 2 tempos (L)')
+  await expect(page.getByLabel('Quantidade da linha 1')).toHaveValue('4')
+  await expect(page.getByLabel('Custo unitário da linha 1')).toHaveValue('30,00')
+  await expect(page.getByLabel('Peça da linha 2')).toHaveValue('Óleo Motul 800')
+  await expect(page.getByLabel('Unidade da linha 2')).toHaveValue('L')
+  await expect(page.getByLabel('Quantidade da linha 2')).toHaveValue('0,5')
+
+  // Só o que faltava, e a compra entra inteira — as duas linhas.
+  await page.getByLabel('Custo unitário da linha 2').fill('45,00')
+  await page.getByRole('button', { name: 'Registrar compra' }).click()
+  await expect(page).toHaveURL('/compras')
+  await expect(page.getByRole('cell', { name: 'Peças Rio Claro' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'R$ 142,50' })).toBeVisible()
+
+  await page.goto('/estoque')
+  const motul = page.getByRole('row').filter({ hasText: 'Óleo Motul 800' })
+  await expect(motul.getByRole('cell', { name: '0,5', exact: true })).toBeVisible()
+})
+
 test('peça nova em litro respeita a unidade escolhida', async ({ page }) => {
   await page.goto('/compras/nova')
 

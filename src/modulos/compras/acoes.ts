@@ -4,14 +4,47 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { parsearReais } from '@/lib/dinheiro'
 import { parsearQuantidade } from '@/lib/quantidade'
-import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
+import {
+  falha,
+  falhaDeValidacao,
+  type EcoDoFormulario,
+  type Resultado,
+} from '@/lib/resultado'
 import { entradaCompra } from './esquemas'
 import { registrarCompra } from './operacoes'
 
-function objetoDoFormulario(formulario: FormData): Record<string, string> {
-  const dados: Record<string, string> = {}
-  for (const [chave, valor] of formulario.entries()) dados[chave] = String(valor)
-  return dados
+/** Os `name` que a tela repete uma vez por linha de item. */
+type LinhasDaCompra = {
+  pecaId: string[]
+  pecaNome: string[]
+  unidadeNova: string[]
+  quantidade: string[]
+  custo: string[]
+}
+
+function linhasDoFormulario(formulario: FormData): LinhasDaCompra {
+  const lista = (chave: string) => formulario.getAll(chave).map(String)
+  return {
+    pecaId: lista('pecaId'),
+    pecaNome: lista('pecaNome'),
+    unidadeNova: lista('unidadeNova'),
+    quantidade: lista('quantidade'),
+    custo: lista('custo'),
+  }
+}
+
+/**
+ * O que a tela precisa para se remontar igual depois de a validação reprovar.
+ * Cabeçalho em `valores`; item em `listas`, porque as chaves de linha se
+ * repetem e um objeto simples guardaria só a última linha digitada.
+ */
+function ecoDaCompra(formulario: FormData, linhas: LinhasDaCompra): EcoDoFormulario {
+  const valores: Record<string, string> = {}
+  for (const [chave, valor] of formulario.entries()) {
+    if (chave in linhas) continue
+    valores[chave] = String(valor)
+  }
+  return { valores, listas: linhas }
 }
 
 /**
@@ -23,28 +56,25 @@ export async function acaoRegistrarCompra(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
-  const idsDePeca = formulario.getAll('pecaId').map(String)
-  const nomesDePeca = formulario.getAll('pecaNome').map(String)
-  const unidades = formulario.getAll('unidadeNova').map(String)
-  const quantidades = formulario.getAll('quantidade').map(String)
-  const custos = formulario.getAll('custo').map(String)
+  const linhas = linhasDoFormulario(formulario)
+  const eco = ecoDaCompra(formulario, linhas)
 
   const itens = []
-  for (let i = 0; i < quantidades.length; i++) {
-    const pecaId = idsDePeca[i] ?? ''
-    const pecaNome = (nomesDePeca[i] ?? '').trim()
+  for (let i = 0; i < linhas.quantidade.length; i++) {
+    const pecaId = linhas.pecaId[i] ?? ''
+    const pecaNome = (linhas.pecaNome[i] ?? '').trim()
     // Linha em branco: nem escolheu, nem digitou. Ignora sem reclamar.
     if (!pecaId && !pecaNome) continue
 
-    const quantidade = parsearQuantidade(quantidades[i] ?? '')
-    if (quantidade === null) return falha(`Informe a quantidade da linha ${i + 1}.`)
+    const quantidade = parsearQuantidade(linhas.quantidade[i] ?? '')
+    if (quantidade === null) return falha(`Informe a quantidade da linha ${i + 1}.`, eco)
 
-    const custo = parsearReais(custos[i] ?? '')
-    if (custo === null) return falha(`Informe o custo da linha ${i + 1}.`)
+    const custo = parsearReais(linhas.custo[i] ?? '')
+    if (custo === null) return falha(`Informe o custo da linha ${i + 1}.`, eco)
 
     itens.push({
       ...(pecaId ? { pecaId } : { pecaNome }),
-      unidade: (unidades[i] || 'un') as 'un' | 'L' | 'mL',
+      unidade: (linhas.unidadeNova[i] || 'un') as 'un' | 'L' | 'mL',
       quantidade,
       custoUnitarioCentavos: custo,
     })
@@ -63,7 +93,7 @@ export async function acaoRegistrarCompra(
     observacoes: String(formulario.get('observacoes') ?? ''),
     itens,
   })
-  if (!analise.success) return falhaDeValidacao(analise.error, objetoDoFormulario(formulario))
+  if (!analise.success) return falhaDeValidacao(analise.error, eco)
 
   const r = await registrarCompra(analise.data)
   if (!r.ok) return r

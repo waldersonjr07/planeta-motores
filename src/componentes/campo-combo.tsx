@@ -36,6 +36,8 @@ export function CampoCombo({
   className = '',
   'aria-label': rotuloAcessivel,
   aoMudar,
+  idInicial,
+  textoInicial,
 }: {
   rotulo: string
   nome: string
@@ -47,9 +49,17 @@ export function CampoCombo({
   className?: string
   'aria-label'?: string
   aoMudar?: (estado: { id: string | null; nome: string | null }) => void
+  /**
+   * Estado de partida, lido só na montagem — é assim que o combo volta
+   * preenchido quando a tela se remonta pelo eco de uma validação reprovada.
+   * Trocá-los sem remontar não mexe num combo já em uso, de propósito: seria
+   * apagar o que a Lucilene está digitando.
+   */
+  idInicial?: string
+  textoInicial?: string
 }) {
-  const [texto, setTexto] = useState('')
-  const [escolhido, setEscolhido] = useState<string | null>(null)
+  const [texto, setTexto] = useState(textoInicial ?? '')
+  const [escolhido, setEscolhido] = useState<string | null>(idInicial || null)
   const [aberto, setAberto] = useState(false)
   const [indice, setIndice] = useState(0)
   const idBase = useId()

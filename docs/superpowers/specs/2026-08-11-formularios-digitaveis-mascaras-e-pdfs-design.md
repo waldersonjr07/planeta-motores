@@ -292,20 +292,40 @@ devolve os erros corretamente; o que se perde são os valores no DOM.
 `src/lib/resultado.ts` — a falha passa a poder carregar o que foi digitado:
 
 ```ts
+export type EcoDoFormulario = {
+  valores?: Record<string, string>
+  listas?: Record<string, string[]>
+}
+
 export type Resultado<T> =
   | { ok: true; dados: T }
-  | { ok: false; erro: string
-      campos?: Record<string, string>
-      valores?: Record<string, string> }
+  | ({ ok: false; erro: string
+       campos?: Record<string, string> } & EcoDoFormulario)
+
+export function falha(
+  erro: string,
+  extras?: { campos?: Record<string, string> } & EcoDoFormulario,
+): Resultado<never>
 
 export function falhaDeValidacao(
   erro: ZodError,
-  valores?: Record<string, string>,
+  eco?: EcoDoFormulario,
 ): Resultado<never>
 ```
 
 `campos` continua sendo mensagem por campo; `valores` é o eco do que foi
-enviado. Os dois são opcionais, então nenhuma chamada existente quebra.
+enviado. Todos são opcionais.
+
+**`listas` existe por causa da compra.** Aquele formulário repete `pecaId`,
+`pecaNome`, `unidadeNova`, `quantidade` e `custo` uma vez por linha de item, e
+montar o eco com `Object.fromEntries(formData)` colapsaria as repetições na
+última linha. O cabeçalho vai em `valores`; as linhas vão em `listas`, na ordem
+em que o navegador as entrega — a mesma ordem em que a ação as lê para formar
+os itens, e a mesma em que a tela as devolve aos campos.
+
+O eco também viaja nas falhas que não são de esquema — "Informe o custo da
+linha 2." é a reprovação mais comum da compra, e é justamente sobre uma linha
+de item; devolvê-la sem o eco apagaria o que causou o erro.
 
 `acaoCriarOs` e `acaoRegistrarCompra` passam o `dados` que já montam a partir do
 `FormData`.
@@ -313,7 +333,11 @@ enviado. Os dois são opcionais, então nenhuma chamada existente quebra.
 No formulário, os campos leem `resultado.valores?.<nome>` como `defaultValue`, e
 o elemento raiz recebe uma `key` que muda a cada tentativa. A `key` é necessária
 porque trocar `defaultValue` não altera um input já montado — o remonte é o que
-faz o valor voltar.
+faz o valor voltar. Na compra, cada linha de item recebe
+`key={`${tentativa}:${linha}`}` e lê `resultado.listas?.<nome>?.[linha]`.
+
+O `CampoCombo` não tem `defaultValue`: guarda o texto em estado. Para participar
+do remonte ele recebe `idInicial` e `textoInicial`, lidos só na montagem.
 
 Aplicado em:
 
