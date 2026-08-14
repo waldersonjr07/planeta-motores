@@ -4,7 +4,7 @@ Sistema de controle de clientes, ordens de serviço e estoque da Planeta Motores
 oficina de conserto de motores a combustão 2T e 4T.
 
 - **Desenho (spec):** [`docs/superpowers/specs/2026-07-29-planeta-motores-design.md`](docs/superpowers/specs/2026-07-29-planeta-motores-design.md)
-- **Planos:** [fundação e cadastros](docs/superpowers/plans/2026-07-29-planeta-motores-fundacao-e-cadastros.md) · [ordens de serviço e estoque](docs/superpowers/plans/2026-07-30-planeta-motores-ordens-servico-e-estoque.md) · [financeiro, documentos e implantação](docs/superpowers/plans/2026-07-30-planeta-motores-financeiro-documentos-implantacao.md)
+- **Planos:** [fundação e cadastros](docs/superpowers/plans/2026-07-29-planeta-motores-fundacao-e-cadastros.md) · [ordens de serviço e estoque](docs/superpowers/plans/2026-07-30-planeta-motores-ordens-servico-e-estoque.md) · [financeiro, documentos e implantação](docs/superpowers/plans/2026-07-30-planeta-motores-financeiro-documentos-implantacao.md) · [formulários digitáveis, máscaras e PDFs](docs/superpowers/plans/2026-08-11-formularios-digitaveis-mascaras-e-pdfs.md)
 - **Implantação:** [`docs/implantacao.md`](docs/implantacao.md)
 
 ## Situação atual
@@ -77,8 +77,8 @@ Não existe cadastro público de usuário, por decisão do spec.
 ### Testes
 
 ```powershell
-npm test                  # 206 testes de unidade e integração (Vitest)
-npm run teste:e2e         # 28 testes ponta a ponta (Playwright)
+npm test                  # 335 testes de unidade e integração (Vitest)
+npm run teste:e2e         # 63 testes ponta a ponta (Playwright)
 ```
 
 Os testes usam o banco `pm_teste`, separado do `pm` de desenvolvimento, e o
@@ -131,6 +131,10 @@ seja testável em Vitest sem simular `cookies()`, `revalidatePath()` ou
 - Quantidades em `numeric(12,3)`, para admitir 0,5 L de óleo
 - `timestamptz` no banco, exibição no fuso `America/Sao_Paulo`
 - Toda escrita passa por Server Action validada com Zod
+- **Toda Server Action começa com `await exigirUsuario()`** — o layout não roda
+  na invocação de uma ação, então sem essa linha a ação nasce aberta para a
+  internet. `testes/unidade/acoes-protegidas.test.ts` varre o código e reprova
+  quem esquecer
 - Server Action devolve `Resultado`, não lança exceção para a tela
 - Nomes de arquivo, função, variável e coluna em português
 - Saldo de estoque é a soma dos movimentos, nunca uma coluna editada
