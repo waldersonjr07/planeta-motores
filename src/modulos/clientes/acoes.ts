@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { falhaDeValidacao, type Resultado } from '@/lib/resultado'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaEquipamento } from './equipamentos-esquemas'
 import { criarEquipamento, definirAtivoEquipamento } from './equipamentos-operacoes'
 import { entradaCliente } from './esquemas'
@@ -18,6 +19,8 @@ export async function acaoCriarCliente(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const analise = entradaCliente.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
 
@@ -32,6 +35,8 @@ export async function acaoAtualizarCliente(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const id = String(formulario.get('id') ?? '')
   const analise = entradaCliente.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
@@ -45,6 +50,8 @@ export async function acaoAtualizarCliente(
 }
 
 export async function acaoDefinirAtivoCliente(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   const id = String(formulario.get('id') ?? '')
   await definirAtivoCliente(id, formulario.get('ativo') === 'true')
   revalidatePath('/clientes')
@@ -55,6 +62,8 @@ export async function acaoCriarEquipamento(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const analise = entradaEquipamento.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
 
@@ -66,6 +75,8 @@ export async function acaoCriarEquipamento(
 }
 
 export async function acaoDefinirAtivoEquipamento(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await definirAtivoEquipamento(
     String(formulario.get('id') ?? ''),
     formulario.get('ativo') === 'true',

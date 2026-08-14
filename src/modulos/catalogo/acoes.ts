@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { falhaDeValidacao, type Resultado } from '@/lib/resultado'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaFornecedor } from './fornecedores-esquemas'
 import {
   atualizarFornecedor,
@@ -23,6 +24,8 @@ export async function acaoSalvarServico(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const analise = entradaServico.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
 
@@ -35,6 +38,8 @@ export async function acaoSalvarServico(
 }
 
 export async function acaoDefinirAtivoServico(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await definirAtivoServico(
     String(formulario.get('id') ?? ''),
     formulario.get('ativo') === 'true',
@@ -46,6 +51,8 @@ export async function acaoSalvarPeca(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const analise = entradaPeca.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
 
@@ -59,6 +66,8 @@ export async function acaoSalvarPeca(
 }
 
 export async function acaoDefinirAtivoPeca(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await definirAtivoPeca(String(formulario.get('id') ?? ''), formulario.get('ativo') === 'true')
   // A peça é gerenciada na tela de Estoque, não no catálogo.
   revalidatePath('/estoque')
@@ -68,6 +77,8 @@ export async function acaoSalvarFornecedor(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const analise = entradaFornecedor.safeParse(objeto(formulario))
   if (!analise.success) return falhaDeValidacao(analise.error)
 
@@ -82,6 +93,8 @@ export async function acaoSalvarFornecedor(
 }
 
 export async function acaoDefinirAtivoFornecedor(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await definirAtivoFornecedor(
     String(formulario.get('id') ?? ''),
     formulario.get('ativo') === 'true',

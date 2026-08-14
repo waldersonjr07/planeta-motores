@@ -10,6 +10,7 @@ import {
   type EcoDoFormulario,
   type Resultado,
 } from '@/lib/resultado'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaCompra } from './esquemas'
 import { registrarCompra } from './operacoes'
 
@@ -56,6 +57,8 @@ export async function acaoRegistrarCompra(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const linhas = linhasDoFormulario(formulario)
   const eco = ecoDaCompra(formulario, linhas)
 

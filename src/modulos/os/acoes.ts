@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { parsearReais } from '@/lib/dinheiro'
 import { parsearQuantidade } from '@/lib/quantidade'
 import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
-import { usuarioAtual } from '@/modulos/auth/guarda'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaItemOs, entradaOs, entradaOsRapida } from './esquemas'
 import { removerFoto, salvarFoto } from './fotos'
 import type { MomentoFoto } from './momentos'
@@ -35,6 +35,8 @@ export async function acaoCriarOs(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const selecionado = String(formulario.get('equipamento') ?? '')
   const dados = objeto(formulario)
 
@@ -73,6 +75,8 @@ export async function acaoAdicionarItem(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const quantidade = parsearQuantidade(String(formulario.get('quantidade') ?? '1'))
   if (quantidade === null) return falha('Informe uma quantidade como 0,5.')
@@ -113,6 +117,8 @@ export async function acaoAdicionarItem(
 }
 
 export async function acaoRemoverItem(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await removerItem(String(formulario.get('itemId') ?? ''))
   revalidarOs(String(formulario.get('osId') ?? ''))
 }
@@ -121,6 +127,8 @@ export async function acaoDefinirDesconto(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const texto = String(formulario.get('desconto') ?? '').trim()
   const centavos = texto ? parsearReais(texto) : 0
@@ -135,6 +143,8 @@ export async function acaoSalvarDiagnostico(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const r = await atualizarDiagnostico(osId, String(formulario.get('diagnostico') ?? ''))
   if (r.ok) revalidarOs(osId)
@@ -145,6 +155,8 @@ export async function acaoEnviarFoto(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const arquivo = formulario.get('arquivo')
   if (!(arquivo instanceof File)) return falha('Selecione uma foto.')
@@ -160,6 +172,8 @@ export async function acaoEnviarFoto(
 }
 
 export async function acaoRemoverFoto(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await removerFoto(String(formulario.get('fotoId') ?? ''))
   revalidarOs(String(formulario.get('osId') ?? ''))
 }
@@ -168,14 +182,17 @@ export async function acaoMudarSituacao(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  // Uma chamada só: autoriza e, de quebra, dá o autor do histórico. Antes era
+  // `usuarioAtual()`, que aceita `null` — registrava autoria sem autorizar.
+  const usuario = await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const para = String(formulario.get('para') ?? '') as SituacaoOs
-  const usuario = await usuarioAtual()
 
   const r = await mudarSituacao(osId, para, {
     observacao: String(formulario.get('observacao') ?? '').trim() || undefined,
     motivo: String(formulario.get('motivo') ?? '').trim() || undefined,
-    usuarioId: usuario?.id,
+    usuarioId: usuario.id,
   })
   if (r.ok) revalidarOs(osId)
   return r

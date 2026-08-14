@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { parsearReais } from '@/lib/dinheiro'
 import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaDespesa, entradaPagamento } from './esquemas'
 import {
   registrarDespesa,
@@ -32,6 +33,8 @@ export async function acaoRegistrarPagamento(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const osId = String(formulario.get('osId') ?? '')
   const valorCentavos = parsearReais(String(formulario.get('valor') ?? ''))
   if (valorCentavos === null) return falha('Informe um valor como 1.250,50.')
@@ -51,6 +54,8 @@ export async function acaoRegistrarPagamento(
 }
 
 export async function acaoRemoverPagamento(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await removerPagamento(String(formulario.get('pagamentoId') ?? ''))
   revalidarFinanceiro(String(formulario.get('osId') ?? ''))
 }
@@ -59,6 +64,8 @@ export async function acaoRegistrarDespesa(
   _anterior: Resultado<{ id: string }> | null,
   formulario: FormData,
 ): Promise<Resultado<{ id: string }>> {
+  await exigirUsuario()
+
   const eco = { valores: objeto(formulario) }
 
   const valorCentavos = parsearReais(String(formulario.get('valor') ?? ''))
@@ -79,6 +86,8 @@ export async function acaoRegistrarDespesa(
 }
 
 export async function acaoRemoverDespesa(formulario: FormData): Promise<void> {
+  await exigirUsuario()
+
   await removerDespesa(String(formulario.get('despesaId') ?? ''))
   revalidarFinanceiro()
 }

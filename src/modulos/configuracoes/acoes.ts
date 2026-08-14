@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { falhaDeValidacao, type Resultado } from '@/lib/resultado'
+import { exigirUsuario } from '@/modulos/auth/guarda'
 import { entradaConfiguracoes } from './esquemas'
 import { salvarConfiguracoes } from './operacoes'
 
@@ -9,6 +10,8 @@ export async function acaoSalvarConfiguracoes(
   _anterior: Resultado<null> | null,
   formulario: FormData,
 ): Promise<Resultado<null>> {
+  await exigirUsuario()
+
   const dados: Record<string, string> = {}
   for (const [chave, valor] of formulario.entries()) dados[chave] = String(valor)
 
