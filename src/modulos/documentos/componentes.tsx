@@ -267,12 +267,18 @@ export function Campo({ rotulo, valor }: { rotulo: string; valor: string }) {
   )
 }
 
+/**
+ * `unidade` é obrigatória de propósito. Como campo opcional com "un" por
+ * omissão, a coluna UN imprimia "un" para todo item — meio litro de óleo saía
+ * como "0,500 un" no papel — e o compilador não tinha como acusar o produtor
+ * que esqueceu de preencher.
+ */
 export type ItemDoDocumento = {
   tipo: 'peca' | 'servico'
   descricao: string
   quantidade: string
   precoUnitarioCentavos: number
-  unidade?: string
+  unidade: string
 }
 
 export function TabelaDeItens({
@@ -309,7 +315,7 @@ export function TabelaDeItens({
         >
           <Text style={estilos.colItem}>{String(indice + 1).padStart(2, '0')}</Text>
           <Text style={estilos.colDescricao}>{item.descricao}</Text>
-          <Text style={estilos.colUnidade}>{item.unidade ?? 'un'}</Text>
+          <Text style={estilos.colUnidade}>{item.unidade}</Text>
           <Text style={estilos.colQuantidade}>{formatarQuantidade(item.quantidade)}</Text>
           <Text style={estilos.colValor}>{formatarReais(item.precoUnitarioCentavos)}</Text>
           <Text style={estilos.colValor}>

@@ -8,6 +8,7 @@ import {
   osHistorico,
   osItens,
   osOrcamentoVersoes,
+  pecas,
 } from '@/db/schema'
 import { descreverEquipamento } from '@/modulos/clientes/equipamentos-descricao'
 import type { SituacaoOs } from './situacoes'
@@ -15,10 +16,10 @@ import { calcularTotais, type TotaisOs } from './totais'
 
 /**
  * Nota de fronteira: a regra do projeto é que módulo não escreve tabela de
- * outro. Para *leitura de listagem* o módulo `os` junta `clientes` e
- * `equipamentos` — buscar nome de cliente linha a linha por função exportada
- * seria uma consulta por OS sem ganho nenhum. Escrita continua exclusiva do
- * módulo dono.
+ * outro. Para *leitura de listagem* o módulo `os` junta `clientes`,
+ * `equipamentos` e `pecas` — buscar nome de cliente linha a linha por função
+ * exportada seria uma consulta por OS sem ganho nenhum. Escrita continua
+ * exclusiva do módulo dono.
  */
 
 export type OsResumo = {
@@ -32,10 +33,17 @@ export type OsResumo = {
   entregueEm: Date | null
 }
 
+/**
+ * `unidade` não é coluna de `os_itens`: vem da peça referenciada, para o papel
+ * que a oficina entrega em mãos não imprimir "0,500 un" onde é meio litro.
+ * Serviço e item digitado à mão, que não têm peça, ficam em "un".
+ */
+export type ItemDeOs = typeof osItens.$inferSelect & { unidade: string }
+
 export type OsCompleta = typeof ordensServico.$inferSelect & {
   cliente: { id: string; nome: string; telefone: string | null; documento: string | null }
   equipamento: { id: string; descricao: string; numeroSerie: string | null }
-  itens: (typeof osItens.$inferSelect)[]
+  itens: ItemDeOs[]
   totais: TotaisOs
   historico: (typeof osHistorico.$inferSelect)[]
   fotos: (typeof osFotos.$inferSelect)[]
@@ -151,8 +159,14 @@ export async function obterOs(id: string): Promise<OsCompleta | null> {
 
   if (!linha) return null
 
-  const [itens, historico, fotos, versoesOrcamento] = await Promise.all([
-    db.select().from(osItens).where(eq(osItens.osId, id)).orderBy(asc(osItens.criadoEm)),
+  const [linhasDeItem, historico, fotos, versoesOrcamento] = await Promise.all([
+    // `leftJoin`: item de serviço e item digitado à mão não têm peça.
+    db
+      .select({ item: osItens, unidade: pecas.unidade })
+      .from(osItens)
+      .leftJoin(pecas, eq(pecas.id, osItens.pecaId))
+      .where(eq(osItens.osId, id))
+      .orderBy(asc(osItens.criadoEm)),
     db
       .select()
       .from(osHistorico)
@@ -165,6 +179,11 @@ export async function obterOs(id: string): Promise<OsCompleta | null> {
       .where(eq(osOrcamentoVersoes.osId, id))
       .orderBy(asc(osOrcamentoVersoes.versao)),
   ])
+
+  const itens: ItemDeOs[] = linhasDeItem.map((linha) => ({
+    ...linha.item,
+    unidade: linha.unidade ?? 'un',
+  }))
 
   return {
     ...linha.os,

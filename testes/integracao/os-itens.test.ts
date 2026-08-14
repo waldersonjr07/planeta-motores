@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, expect, test } from 'vitest'
 import { db } from '../../src/db'
-import { ordensServico, servicos } from '../../src/db/schema'
+import { ordensServico, pecas, servicos } from '../../src/db/schema'
 import { saldoDaPeca } from '../../src/modulos/estoque/consultas'
 import { listarOs, obterOs } from '../../src/modulos/os/consultas'
 import {
@@ -23,6 +23,37 @@ test('o item copia nome e preço do catálogo no lançamento', async () => {
   const os = await obterOs(osId)
   expect(os?.itens[0].descricao).toBe('Retífica de cilindro')
   expect(os?.itens[0].precoUnitarioCentavos).toBe(21000)
+})
+
+test('o item de peça carrega a unidade do cadastro; o resto fica em un', async () => {
+  const { osId, servico } = await cenarioOs()
+  const [oleo] = await db
+    .insert(pecas)
+    .values({ nome: 'Óleo 2 tempos', unidade: 'L' })
+    .returning()
+
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    referenciaId: oleo.id,
+    quantidade: 0.5,
+    precoUnitarioCentavos: 4500,
+  })
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 })
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    descricao: 'Parafuso avulso',
+    quantidade: 4,
+    precoUnitarioCentavos: 250,
+  })
+
+  const os = await obterOs(osId)
+  const unidadePor = new Map(os!.itens.map((item) => [item.descricao, item.unidade]))
+
+  // É o que a coluna UN do orçamento imprime. Meio litro de óleo saindo como
+  // "0,500 un" é papel errado entregue na mão do cliente.
+  expect(unidadePor.get('Óleo 2 tempos')).toBe('L')
+  expect(unidadePor.get('Retífica de cilindro')).toBe('un')
+  expect(unidadePor.get('Parafuso avulso')).toBe('un')
 })
 
 test('renomear no catálogo não altera item já lançado', async () => {
