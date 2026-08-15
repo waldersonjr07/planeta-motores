@@ -20,16 +20,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Usuário sem privilégio: processo de aplicação não roda como root.
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
-COPY --from=construcao /app/public ./public
+# Todo COPY desta etapa leva --chown. O processo roda como `nextjs`, e arquivo
+# que chega pertencendo a root depende do bit de leitura para "outros" — que não
+# é garantia nenhuma, é o padrão do umask de quem construiu.
+#
+# `public` não é exceção, e é a mais traiçoeira: documentos/componentes.tsx lê o
+# emblema do disco no escopo do módulo, então um EACCES ali não degrada o PDF,
+# derruba a geração dos três documentos na importação.
+COPY --from=construcao --chown=nextjs:nodejs /app/public ./public
 COPY --from=construcao --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=construcao --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Migrações e o script de usuário rodam dentro do contêiner.
-COPY --from=construcao /app/drizzle ./drizzle
-COPY --from=construcao /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=construcao /app/scripts ./scripts
-COPY --from=construcao /app/src/db ./src/db
-COPY --from=construcao /app/src/modulos/auth ./src/modulos/auth
+# Migrações e o script de usuário rodam dentro do contêiner, e também como
+# `nextjs`: o tsx precisa LER estes fontes para transpilá-los.
+COPY --from=construcao --chown=nextjs:nodejs /app/drizzle ./drizzle
+COPY --from=construcao --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=construcao --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=construcao --chown=nextjs:nodejs /app/src/db ./src/db
+COPY --from=construcao --chown=nextjs:nodejs /app/src/modulos/auth ./src/modulos/auth
 COPY --from=construcao /app/node_modules ./node_modules
 
 # A pasta das fotos precisa existir e já pertencer ao usuário da aplicação
