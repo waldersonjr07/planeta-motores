@@ -170,3 +170,19 @@ Anotadas porque custaram tempo e reaparecem com facilidade:
   e parece defeito.
 - **Teste ponta a ponta verde não substitui `npm run build`.** O `next dev` não
   faz verificação de tipos; erro de tipo só aparece no build.
+- **`uncaughtException: [Error: aborted] { code: 'ECONNRESET' }` no log é
+  inofensivo, e aparece de forma intermitente.** É requisição abortada com a
+  resposta em voo — na suíte, o Playwright navegando enquanto uma Server Action
+  ainda responde. Sai em desenvolvimento e em produção, e em nenhum dos dois
+  derruba o processo: o `installProcessErrorHandlers` do Next
+  (`next-server.js`) instala handlers de `uncaughtException` e
+  `unhandledRejection` que apenas registram, com o comentário "prevent the
+  process from crashing". Verificado no standalone de produção com 30 abortos em
+  voo — o processo seguiu respondendo 200. Aparece em umas rodadas e não em
+  outras, com o mesmo código; **não é sinal de regressão e não vale investigar
+  por causa dele.** Se algum dia a aplicação de fato cair, o que muda é o
+  processo morrer, não esta linha existir.
+- **Suíte lentíssima é falta de memória, não defeito.** Numa máquina com pouca
+  RAM livre, a suíte ponta a ponta degrada de ~3 min para horas, com testes
+  individuais passando de 25 min, e aí falha por tempo esgotado em asserções que
+  passam normalmente. Antes de investigar falha de e2e, confira a memória livre.
