@@ -12,6 +12,17 @@ export function hoje(): string {
   return formatador.format(new Date())
 }
 
+/**
+ * Ano civil corrente em São Paulo.
+ *
+ * Existe para que ninguém precise de `new Date().getFullYear()`: o contêiner
+ * da aplicação roda em UTC, e às 21h de 31 de dezembro lá já é o ano seguinte.
+ * A numeração da OS depende disto.
+ */
+export function anoCorrente(referencia = hoje()): number {
+  return Number(referencia.slice(0, 4))
+}
+
 export type Periodo = { de: string; ate: string }
 
 /** Primeiro e último dia do mês corrente, ou do mês informado como `AAAA-MM`. */

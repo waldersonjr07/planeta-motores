@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
 import { formatarReais } from '@/lib/dinheiro'
 import { mesDe, rotuloDoMes } from '@/lib/periodo'
+import { obterEstadoDoBackup } from '@/modulos/backup/consultas'
+import { precisaAvisar } from '@/modulos/backup/estado'
 import { obterPainel } from '@/modulos/painel/consultas'
 
 function Indicador({
@@ -37,8 +39,28 @@ function Indicador({
   )
 }
 
+/**
+ * O texto é para quem abre esta tela todo dia, que não administra a VPS: diz
+ * que há algo errado e a quem recorrer, e para por aí. Nada de data, de nome de
+ * arquivo ou do estado da cópia externa — informação que ela não tem como usar
+ * só ensinaria a ignorar o aviso.
+ *
+ * Some por completo quando o backup está em dia. Um "tudo certo" fixo na tela
+ * vira parte do cenário em uma semana, e aí não avisa mais nada.
+ */
+function AvisoDeBackup() {
+  return (
+    <p
+      role="alert"
+      className="rounded-lg border border-alerta/30 bg-alerta-fundo px-5 py-4 text-sm text-alerta"
+    >
+      A cópia de segurança do sistema não está sendo feita. Avise o Walderson.
+    </p>
+  )
+}
+
 export default async function PaginaPainel() {
-  const painel = await obterPainel()
+  const [painel, backup] = await Promise.all([obterPainel(), obterEstadoDoBackup()])
 
   return (
     <>
@@ -46,6 +68,8 @@ export default async function PaginaPainel() {
         titulo="Painel"
         descricao={`O que está parado e o que está em aberto. Resultado referente a ${rotuloDoMes(mesDe())}.`}
       />
+
+      {backup && precisaAvisar(backup) && <AvisoDeBackup />}
 
       <div className="flex flex-wrap gap-3">
         <Indicador rotulo="Na oficina" valor={String(painel.naOficina)} />

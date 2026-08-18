@@ -4,12 +4,14 @@
  * reabre.
  */
 
+import { formatarDataHoraIso } from '@/lib/datas'
+
 function escapar(valor: unknown): string {
   if (valor === null || valor === undefined) return ''
 
   const texto =
     valor instanceof Date
-      ? valor.toISOString()
+      ? formatarDataHoraIso(valor)
       : typeof valor === 'object'
         ? JSON.stringify(valor)
         : String(valor)

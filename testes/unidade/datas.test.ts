@@ -1,5 +1,32 @@
 import { expect, test } from 'vitest'
-import { diasDesde, formatarData, formatarDataHora } from '../../src/lib/datas'
+import {
+  diasDesde,
+  formatarData,
+  formatarDataHora,
+  formatarDataHoraIso,
+} from '../../src/lib/datas'
+
+test('formata em ISO com o deslocamento de São Paulo', () => {
+  // 12:00 UTC são 09:00 em São Paulo. O deslocamento vai escrito para que a
+  // planilha de quem abre o CSV não precise adivinhar nada.
+  expect(formatarDataHoraIso(new Date('2026-07-30T12:00:00Z'))).toBe(
+    '2026-07-30T09:00:00-03:00',
+  )
+})
+
+test('o deslocamento acompanha o horário de verão que já existiu', () => {
+  // O Brasil aboliu o horário de verão em 2019. Exportação de dado anterior a
+  // isso sai com o deslocamento que valia na data, e não com o de hoje.
+  expect(formatarDataHoraIso(new Date('2018-01-15T12:00:00Z'))).toBe(
+    '2018-01-15T10:00:00-02:00',
+  )
+})
+
+test('meia-noite sai como 00, não como 24', () => {
+  expect(formatarDataHoraIso(new Date('2026-07-30T03:00:00Z'))).toBe(
+    '2026-07-30T00:00:00-03:00',
+  )
+})
 
 test('formata a data no padrão brasileiro', () => {
   expect(formatarData(new Date('2026-07-29T12:00:00Z'))).toBe('29/07/2026')

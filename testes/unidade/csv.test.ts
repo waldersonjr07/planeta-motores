@@ -25,10 +25,14 @@ test('nulo e indefinido viram campo vazio', () => {
   expect(paraCsv([{ a: null, b: undefined, c: 'x' }], ['a', 'b', 'c'])).toBe('a,b,c\r\n,,x')
 })
 
-test('data sai em formato ISO', () => {
+test('data sai em ISO com o fuso de São Paulo, não em UTC', () => {
+  // Quem abre este arquivo é o dono da oficina, no Brasil, numa planilha.
+  // `12:00Z` para um evento das 09:00 está tecnicamente certo e convida ao
+  // erro de leitura; com o deslocamento escrito, não há o que interpretar.
   const csv = paraCsv([{ quando: new Date('2026-07-30T12:00:00Z') }])
 
-  expect(csv).toContain('2026-07-30T12:00:00.000Z')
+  expect(csv).toContain('2026-07-30T09:00:00-03:00')
+  expect(csv).not.toContain('12:00:00.000Z')
 })
 
 test('lista vazia devolve texto vazio', () => {

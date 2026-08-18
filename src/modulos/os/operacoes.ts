@@ -12,6 +12,7 @@ import {
   pecas,
   servicos,
 } from '@/db/schema'
+import { anoCorrente } from '@/lib/periodo'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
 import { criarClienteComEquipamento } from '@/modulos/clientes/operacoes'
 import { registrarMovimento, type Transacao } from '@/modulos/estoque/operacoes'
@@ -49,7 +50,9 @@ export async function criarOs(
   }
 
   return db.transaction(async (tx) => {
-    const ano = new Date().getFullYear()
+    // Fuso de São Paulo, e não o do contêiner (que é UTC): uma OS aberta às
+    // 21h de 31 de dezembro sairia numerada com o ano seguinte.
+    const ano = anoCorrente()
 
     // `insert … on conflict do update … returning` é atômico: transações
     // concorrentes serializam nesta linha e recebem números distintos.

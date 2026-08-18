@@ -61,6 +61,16 @@ as suas outras senhas.
 
 ## 4. Subir
 
+Antes de subir, crie o diretório dos backups:
+
+```bash
+mkdir -p ~/backups/estado
+```
+
+A pasta `estado` é montada no contêiner da aplicação para o painel poder avisar
+quando o backup parar. Se ela não existir agora, o Docker a cria sozinho e como
+root, e depois o backup não consegue gravar nada nela.
+
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
@@ -99,9 +109,12 @@ responsabilidade sua. E backup guardado no mesmo disco que ele deveria proteger
 não é backup: um disco perdido leva o sistema e todo o histórico da oficina
 junto.
 
-Além do snapshot, use o botão **Exportar dados** em Configurações de vez em
-quando e guarde o `.zip` fora da VPS. São dois mecanismos independentes, o que é
-exatamente a intenção.
+**Depois do snapshot, siga o `docs/backup.md` até o fim** — cron, cópia para
+fora da VPS e o ensaio de restauração. O snapshot restaura a máquina inteira e
+não resolve dado apagado por engano: o snapshot mais recente já teria o engano
+dentro.
+
+Os dois mecanismos são independentes, o que é exatamente a intenção.
 
 ## Manutenção recorrente
 
@@ -112,18 +125,29 @@ O que passou a ser tarefa sua ao escolher VPS:
 | Mensal | `sudo apt update && sudo apt upgrade` e reiniciar se pedir |
 | Mensal | Conferir no painel do provedor que o snapshot **está mesmo sendo gerado** — ele não avisa quando para |
 | Mensal | Baixar a exportação em CSV e guardar fora da VPS |
+| Trimestral | Ensaio de restauração — `docs/backup.md` |
 | A cada atualização | `git pull && docker compose -f docker-compose.prod.yml up -d --build` e, se houver migração nova, rodar `drizzle-kit migrate` |
+
+O backup diário não entra nesta tabela de propósito: quem confere se ele está
+acontecendo é o painel do sistema, que avisa sozinho quando o último passa de 36
+horas. Tarefa que depende de alguém lembrar de olhar é tarefa que uma hora para
+de ser feita.
 
 ## Restaurar
 
-Pelo snapshot do provedor, restaura-se a máquina inteira — é o caminho normal.
+Pelo snapshot do provedor, restaura-se a máquina inteira — é o caminho normal
+quando o problema é a máquina.
 
-Para restaurar só o banco a partir de um dump:
+Quando o problema é o dado — algo apagado por engano —, o caminho é o
+`scripts/restaurar.sh`, documentado em `docs/backup.md`. Ele carrega o dump num
+banco à parte, mostra as contagens e só troca os nomes depois que você confirmar:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec -T postgres \
-  psql -U pm -d pm < backup.sql
+./scripts/restaurar.sh --banco ~/backups/banco-2026-08-17-0300.sql.gz --producao
 ```
+
+Não carregue um dump por cima do banco `pm` à mão. Sem `ON_ERROR_STOP`, o `psql`
+segue depois de um erro e termina com sucesso sobre um banco pela metade.
 
 ## Ver o que está acontecendo
 

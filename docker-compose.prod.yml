@@ -7,9 +7,20 @@ services:
     environment:
       DATABASE_URL: postgres://pm:${POSTGRES_PASSWORD}@postgres:5432/pm
       NODE_ENV: production
+      # A imagem `node:alpine` roda em UTC. A tela não depende disto — todo
+      # formatador de `src/lib/datas.ts` passa o fuso explícito, e é assim que
+      # tem de continuar —, mas aqui o horário dos logs bate com o do relógio
+      # de quem lê, e código novo que esqueça o fuso explícito acerta por
+      # acidente em vez de errar por três horas.
+      TZ: America/Sao_Paulo
     volumes:
       # Fotos das ordens de serviço. Fora daqui elas some a cada implantação.
       - pm-uploads:/app/uploads
+      # Só o carimbo do último backup, para o painel avisar quando ele parar.
+      # Somente leitura, e só a pasta `estado` — montar `backups` inteiro daria
+      # à aplicação web acesso de leitura a todos os dumps do banco para ler uma
+      # data. O diretório é criado pelo scripts/backup.sh.
+      - ${DIR_BACKUPS:-/home/planeta/backups}/estado:/estado:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -21,6 +32,10 @@ services:
       POSTGRES_USER: pm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: pm
+      # Só os logs do Postgres. As colunas de data são `date` (sem hora) e as de
+      # instante são `timestamptz`, que guarda o momento absoluto — nenhuma das
+      # duas muda de valor por causa desta linha.
+      TZ: America/Sao_Paulo
       # Mesma ordenação do desenvolvimento: sem isso nome acentuado sai fora de
       # ordem na lista de clientes.
       POSTGRES_INITDB_ARGS: >-
