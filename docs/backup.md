@@ -42,7 +42,7 @@ Tudo abaixo roda como o usuário `planeta`, na VPS.
 ### 1. Fuso horário da máquina
 
 ```bash
-sudo timedatectl set-timezone America/Sao_Paulo
+sudo timedatectl set-timezone America/Cuiaba
 ```
 
 Não muda o funcionamento — os carimbos de data levam o fuso escrito dentro —,
@@ -136,7 +136,7 @@ Pela linha de comando:
 
 ```bash
 cat ~/backups/estado/ULTIMO-SUCESSO
-# 2026-08-17T03:00:12-03:00  cópia externa: enviada
+# 2026-08-17T03:00:12-04:00  cópia externa: enviada
 
 tail -20 ~/backups/backup.log
 ls -lh ~/backups

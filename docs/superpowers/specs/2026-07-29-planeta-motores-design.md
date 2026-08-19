@@ -85,7 +85,7 @@ Cada módulo é uma pasta com seu recorte de schema, suas Server Actions e suas 
 
 ## 6. Modelo de dados
 
-Convenções: identificadores em `uuid`; valores monetários em **centavos como inteiro**, nunca ponto flutuante; quantidades em `numeric(12,3)` para admitir fração (0,5 L de óleo); datas e horas em `timestamptz`, exibidas no fuso `America/Sao_Paulo`; toda tabela tem `criado_em`.
+Convenções: identificadores em `uuid`; valores monetários em **centavos como inteiro**, nunca ponto flutuante; quantidades em `numeric(12,3)` para admitir fração (0,5 L de óleo); datas e horas em `timestamptz`, exibidas no fuso `America/Cuiaba` — a oficina fica em Cáceres-MT, que é UTC-4 e não UTC-3; toda tabela tem `criado_em`.
 
 **`usuarios`** — `id`, `nome`, `email` (único), `senha_hash`, `ativo`, `criado_em`
 

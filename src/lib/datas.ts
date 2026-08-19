@@ -1,4 +1,13 @@
-export const FUSO = 'America/Sao_Paulo'
+/**
+ * A oficina fica em Cáceres, Mato Grosso. `America/Cuiaba` é a zona IANA que
+ * cobre o estado inteiro — não existe `America/Caceres` —, e são quatro horas
+ * atrás de UTC, não três: Mato Grosso não é Brasília.
+ *
+ * Toda formatação e toda conta de dia civil deste sistema passa por aqui. O
+ * contêiner da aplicação roda em UTC, então nada pode depender do relógio
+ * local dele.
+ */
+export const FUSO = 'America/Cuiaba'
 
 const somenteData = new Intl.DateTimeFormat('pt-BR', {
   timeZone: FUSO,
@@ -38,28 +47,28 @@ const partesIso = new Intl.DateTimeFormat('en-US', {
 })
 
 /**
- * ISO-8601 no fuso de São Paulo, com o deslocamento escrito:
- * `2026-07-30T09:00:00-03:00`.
+ * ISO-8601 no fuso da oficina, com o deslocamento escrito:
+ * `2026-07-30T08:00:00-04:00`.
  *
  * É o formato da exportação em CSV. `toISOString()` sairia em UTC, que é exato
  * e não perde informação nenhuma — e mesmo assim está errado para o uso: quem
  * abre o arquivo é o dono da oficina, no Brasil, numa planilha, e ler `12:00Z`
  * como meio-dia num evento das nove da manhã é o erro que o `Z` não impede.
  *
- * O deslocamento sai do próprio `Intl`, e não de uma constante `-03:00`: o
- * Brasil teve horário de verão até 2019, e dado exportado de antes disso tem de
- * levar o deslocamento que valia na data.
+ * O deslocamento sai do próprio `Intl`, e não de uma constante `-04:00`: Mato
+ * Grosso teve horário de verão até 2019 — no verão o estado ia para UTC-3 —, e
+ * dado exportado de antes disso tem de levar o deslocamento que valia na data.
  */
 export function formatarDataHoraIso(valor: Date): string {
   const partes = new Map(partesIso.formatToParts(valor).map((p) => [p.type, p.value]))
   const data = `${partes.get('year')}-${partes.get('month')}-${partes.get('day')}`
   const hora = `${partes.get('hour')}:${partes.get('minute')}:${partes.get('second')}`
-  // `longOffset` devolve "GMT-03:00"; no deslocamento zero devolve só "GMT".
+  // `longOffset` devolve "GMT-04:00"; no deslocamento zero devolve só "GMT".
   const deslocamento = (partes.get('timeZoneName') ?? '').replace('GMT', '') || '+00:00'
   return `${data}T${hora}${deslocamento}`
 }
 
-/** Meia-noite do dia civil de São Paulo, expressa em milissegundos UTC. */
+/** Meia-noite do dia civil de Cáceres, expressa em milissegundos UTC. */
 function diaCivil(valor: Date): number {
   const [dia, mes, ano] = somenteData.format(valor).split('/').map(Number)
   return Date.UTC(ano, mes - 1, dia)

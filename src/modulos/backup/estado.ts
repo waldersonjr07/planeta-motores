@@ -22,8 +22,8 @@ export type EstadoDoBackup =
 
 /**
  * Exatamente o que o `date '+%Y-%m-%dT%H:%M:%S%:z'` do script escreve, com o
- * fuso obrigatório. A VPS pode estar em UTC e quem lê está em São Paulo; data
- * sem fuso seria interpretada como local e daria três horas de erro.
+ * fuso obrigatório. A VPS pode estar em UTC e quem lê está em Cáceres; data
+ * sem fuso seria interpretada como local e daria quatro horas de erro.
  *
  * O rigor é a intenção: qualquer coisa que não seja este formato é tratada
  * como "não sei", que avisa. Um `Date.parse` solto aceitaria `2026` como uma

@@ -130,7 +130,7 @@ seja testável em Vitest sem simular `cookies()`, `revalidatePath()` ou
 
 - Dinheiro em **centavos inteiros**, nunca ponto flutuante
 - Quantidades em `numeric(12,3)`, para admitir 0,5 L de óleo
-- `timestamptz` no banco, exibição no fuso `America/Sao_Paulo`
+- `timestamptz` no banco, exibição no fuso `America/Cuiaba` (Cáceres-MT, UTC-4)
 - Toda escrita passa por Server Action validada com Zod
 - **Toda Server Action começa com `await exigirUsuario()`** — o layout não roda
   na invocação de uma ação, então sem essa linha a ação nasce aberta para a

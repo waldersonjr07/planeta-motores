@@ -50,8 +50,8 @@ export async function criarOs(
   }
 
   return db.transaction(async (tx) => {
-    // Fuso de São Paulo, e não o do contêiner (que é UTC): uma OS aberta às
-    // 21h de 31 de dezembro sairia numerada com o ano seguinte.
+    // Fuso da oficina, e não o do contêiner (que é UTC): uma OS aberta às
+    // 20h de 31 de dezembro sairia numerada com o ano seguinte.
     const ano = anoCorrente()
 
     // `insert … on conflict do update … returning` é atômico: transações

@@ -1,5 +1,6 @@
 import JSZip from 'jszip'
 import { NextResponse } from 'next/server'
+import { hoje } from '@/lib/periodo'
 import { usuarioAtual } from '@/modulos/auth/guarda'
 import { gerarExportacao } from '@/modulos/exportacao/pacote'
 
@@ -17,12 +18,10 @@ export async function GET() {
   }
 
   const conteudo = await zip.generateAsync({ type: 'nodebuffer' })
-  const data = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
+  // `hoje()` em vez de um `Intl` montado aqui: era a segunda cópia do fuso no
+  // código, e cópia de fuso é o tipo de coisa que sobrevive à correção da
+  // primeira. O nome do arquivo tem de ser o dia de quem baixa.
+  const data = hoje()
 
   return new NextResponse(new Uint8Array(conteudo), {
     headers: {

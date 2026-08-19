@@ -7,16 +7,16 @@ const formatador = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 })
 
-/** Hoje no fuso de São Paulo, no formato ISO que `input[type=date]` espera. */
+/** Hoje no fuso da oficina, no formato ISO que `input[type=date]` espera. */
 export function hoje(): string {
   return formatador.format(new Date())
 }
 
 /**
- * Ano civil corrente em São Paulo.
+ * Ano civil corrente em Cáceres.
  *
  * Existe para que ninguém precise de `new Date().getFullYear()`: o contêiner
- * da aplicação roda em UTC, e às 21h de 31 de dezembro lá já é o ano seguinte.
+ * da aplicação roda em UTC, e às 20h de 31 de dezembro lá já é o ano seguinte.
  * A numeração da OS depende disto.
  */
 export function anoCorrente(referencia = hoje()): number {

@@ -12,7 +12,7 @@ services:
       # tem de continuar —, mas aqui o horário dos logs bate com o do relógio
       # de quem lê, e código novo que esqueça o fuso explícito acerta por
       # acidente em vez de errar por três horas.
-      TZ: America/Sao_Paulo
+      TZ: America/Cuiaba
     volumes:
       # Fotos das ordens de serviço. Fora daqui elas some a cada implantação.
       - pm-uploads:/app/uploads
@@ -35,7 +35,7 @@ services:
       # Só os logs do Postgres. As colunas de data são `date` (sem hora) e as de
       # instante são `timestamptz`, que guarda o momento absoluto — nenhuma das
       # duas muda de valor por causa desta linha.
-      TZ: America/Sao_Paulo
+      TZ: America/Cuiaba
       # Mesma ordenação do desenvolvimento: sem isso nome acentuado sai fora de
       # ordem na lista de clientes.
       POSTGRES_INITDB_ARGS: >-

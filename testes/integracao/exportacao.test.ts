@@ -48,7 +48,7 @@ test('os dados aparecem no CSV correspondente', async () => {
   // teste de unidade do csv.ts não cobre: o valor sai do banco, atravessa o
   // drizzle e só então é serializado. Sem o deslocamento, a planilha mostraria
   // o horário três horas adiantado.
-  expect(porNome.get('clientes.csv')).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-0[23]:00/)
+  expect(porNome.get('clientes.csv')).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-0[34]:00/)
   expect(porNome.get('clientes.csv')).not.toMatch(/\dZ/)
 })
 
