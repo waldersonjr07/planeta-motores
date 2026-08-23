@@ -35,7 +35,7 @@ test.beforeEach(async ({ page }) => {
   await expect(resumoDaOs(page)).toContainText('R$ 210,00')
 })
 
-test('sinal deixa a cobrança parcial e o saldo aparece em contas a receber', async ({
+test('sinal deixa a cobrança parcial, e o saldo só vira dívida com o serviço pronto', async ({
   page,
 }) => {
   await page.getByRole('link', { name: /^Pagamentos/ }).click()
@@ -47,9 +47,56 @@ test('sinal deixa a cobrança parcial e o saldo aparece em contas a receber', as
   await expect(page.getByRole('cell', { name: 'R$ 50,00' })).toBeVisible()
   await expect(resumoDaOs(page)).toContainText('Parcial')
 
+  const ficha = page.url()
+
+  // Serviço aprovado e em curso é previsão de receita, não dívida: aparece na
+  // lista de em andamento e fica fora do total em aberto.
+  for (const passo of ['Em diagnóstico', 'Orçamento enviado', 'Aprovado', 'Em execução']) {
+    await mudarSituacaoNaTela(page, passo)
+  }
+
+  await page.goto('/financeiro')
+  await expect(page.getByText('Total em aberto: R$ 0,00')).toBeVisible()
+  const emAndamento = page.getByRole('region', { name: 'Em andamento' })
+  await expect(emAndamento.getByRole('cell', { name: 'R$ 160,00' })).toBeVisible()
+
+  // Executado o serviço, o mesmo saldo passa a ser dívida de verdade.
+  await page.goto(ficha)
+  await mudarSituacaoNaTela(page, 'Pronto')
+
   await page.goto('/financeiro')
   await expect(page.getByText('Total em aberto: R$ 160,00')).toBeVisible()
-  await expect(page.getByRole('cell', { name: 'R$ 160,00' })).toBeVisible()
+  const aguardando = page.getByRole('region', { name: 'Aguardando pagamento' })
+  await expect(aguardando.getByRole('cell', { name: 'R$ 160,00' })).toBeVisible()
+  await expect(emAndamento.getByText('Nenhum serviço em curso')).toBeVisible()
+})
+
+test('cancelar OS com pagamento mostra o valor recebido e pede confirmação', async ({
+  page,
+}) => {
+  await page.getByRole('link', { name: /^Pagamentos/ }).click()
+  await page.getByLabel('Valor').fill('50,00')
+  await page.getByRole('button', { name: 'Lançar pagamento' }).click()
+  await expect(resumoDaOs(page)).toContainText('Parcial')
+
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+  await page.getByRole('button', { name: /^Cancelado/ }).click()
+
+  // O clique não cancela: primeiro põe na frente o dinheiro que já entrou.
+  await expect(page.getByText('Esta OS já recebeu R$ 50,00.')).toBeVisible()
+  await expect(page.getByText('Ordem de serviço encerrada.')).toHaveCount(0)
+
+  // Avisa, não bloqueia: quem confirmar cancela.
+  await page.getByRole('button', { name: 'Confirmar: Cancelado' }).click()
+  await expect(page.getByText('Ordem de serviço encerrada.')).toBeVisible()
+
+  // O valor recebido não some: continua no resultado do mês, pela data em que
+  // entrou, e some de contas a receber, que não é mais dívida de ninguém.
+  await page.goto('/financeiro')
+  await expect(page.getByText('Total em aberto: R$ 0,00')).toBeVisible()
+  await expect(page.getByText('Ninguém devendo.')).toBeVisible()
+  const resultado = page.getByRole('region', { name: 'Resultado do período' })
+  await expect(resultado).toContainText('R$ 50,00')
 })
 
 test('pagamento acima do saldo é recusado com o saldo na mensagem', async ({ page }) => {
@@ -63,6 +110,22 @@ test('pagamento acima do saldo é recusado com o saldo na mensagem', async ({ pa
 })
 
 test('quitar tira a OS de contas a receber', async ({ page }) => {
+  const ficha = page.url()
+
+  for (const passo of [
+    'Em diagnóstico',
+    'Orçamento enviado',
+    'Aprovado',
+    'Em execução',
+    'Pronto',
+  ]) {
+    await mudarSituacaoNaTela(page, passo)
+  }
+
+  await page.goto('/financeiro')
+  await expect(page.getByText('Total em aberto: R$ 210,00')).toBeVisible()
+
+  await page.goto(ficha)
   await page.getByRole('link', { name: /^Pagamentos/ }).click()
   await page.getByLabel('Valor').fill('210,00')
   await page.getByRole('button', { name: 'Lançar pagamento' }).click()
@@ -211,20 +274,35 @@ test('documento sem sessão é recusado', async ({ page, request }) => {
   expect(resposta.status()).toBe(401)
 })
 
-test('o painel mostra as pendências e o valor a receber', async ({ page }) => {
+test('o painel mostra as pendências e cobra só o serviço já executado', async ({
+  page,
+}) => {
   // Só vira pendência a partir de "orçamento enviado": em "recebido" não há
   // nada esperando resposta de ninguém.
   await mudarSituacaoNaTela(page, 'Em diagnóstico')
   await mudarSituacaoNaTela(page, 'Orçamento enviado')
 
+  const ficha = page.url()
   await page.getByRole('link', { name: /^Pagamentos/ }).click()
   await page.getByLabel('Valor').fill('50,00')
   await page.getByRole('button', { name: 'Lançar pagamento' }).click()
 
   await page.goto('/painel')
-  // O mesmo valor aparece na lista de cobranças; o escopo garante que estamos
-  // conferindo o indicador.
-  await expect(page.getByRole('group', { name: 'A receber' })).toContainText('R$ 160,00')
   await expect(page.getByRole('group', { name: 'Na oficina' })).toContainText('1')
   await expect(page.getByText('orçamento sem resposta')).toBeVisible()
+  // Orçamento enviado e sem resposta é pendência, não dívida: ninguém prometeu
+  // pagar isso ainda, e o painel não pode cobrar quem não deve.
+  await expect(page.getByRole('group', { name: 'A receber' })).toContainText('R$ 0,00')
+  await expect(page.getByText('Ninguém devendo.')).toBeVisible()
+
+  await page.goto(ficha)
+  for (const passo of ['Aprovado', 'Em execução', 'Pronto']) {
+    await mudarSituacaoNaTela(page, passo)
+  }
+
+  // Executado o serviço, o saldo vira dívida e o painel passa a mostrá-lo. O
+  // mesmo valor aparece na lista de cobranças; o escopo garante que estamos
+  // conferindo o indicador.
+  await page.goto('/painel')
+  await expect(page.getByRole('group', { name: 'A receber' })).toContainText('R$ 160,00')
 })

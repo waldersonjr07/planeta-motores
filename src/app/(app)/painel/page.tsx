@@ -146,7 +146,10 @@ export default async function PaginaPainel() {
                     {conta.numero} {conta.clienteNome}
                   </Link>
                   <span className="shrink-0 text-tinta-suave">
-                    {formatarReais(conta.saldoCentavos)} · {conta.diasEmAberto} d
+                    {formatarReais(conta.saldoCentavos)}
+                    {/* Sem conclusão nem entrega carimbadas não há dias a
+                        contar, e aí a linha mostra só o valor. */}
+                    {conta.diasEmAberto !== null && ` · ${conta.diasEmAberto} d`}
                   </span>
                 </li>
               ))}

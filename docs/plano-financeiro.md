@@ -1,7 +1,10 @@
 # Separar dívida de previsão em "contas a receber"
 
-Plano aprovado, ainda **não implementado**. Escrito para ser executado por quem
-chegar sem o contexto da conversa que o gerou.
+Plano aprovado e **implementado**. Escrito para ser executado por quem chegar
+sem o contexto da conversa que o gerou, e mantido como registro da decisão.
+
+A consulta que este documento chama de `listarContasAReceber` não existe mais
+com esse nome: virou `listarCobrancas`, que devolve os dois blocos separados.
 
 ## O defeito relatado
 

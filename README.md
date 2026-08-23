@@ -18,7 +18,7 @@ Os três planos estão implementados. O sistema cobre o spec inteiro:
 | Clientes | Cadastro com equipamentos 2T/4T e histórico por motor |
 | Estoque | Razão de movimentos, saldo, reposição e ajuste de inventário |
 | Compras | Compra de peça com custo, vínculo à OS e entrada automática no estoque |
-| Financeiro | Pagamentos (inclusive sinal), contas a receber, despesas e resultado do mês |
+| Financeiro | Pagamentos (inclusive sinal), cobrança separada em dívida e previsão, despesas e resultado do mês |
 | Documentos | Comprovante de recebimento, orçamento e recibo, em PDF |
 | Avisos | Mensagem de WhatsApp montada e aberta para envio manual |
 | Painel | Indicadores e listas de pendência |
@@ -78,8 +78,8 @@ Não existe cadastro público de usuário, por decisão do spec.
 ### Testes
 
 ```powershell
-npm test                  # 335 testes de unidade e integração (Vitest)
-npm run teste:e2e         # 63 testes ponta a ponta (Playwright)
+npm test                  # 368 testes de unidade e integração (Vitest)
+npm run teste:e2e         # 69 testes ponta a ponta (Playwright)
 ```
 
 Os testes usam o banco `pm_teste`, separado do `pm` de desenvolvimento, e o

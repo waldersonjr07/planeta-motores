@@ -1,6 +1,11 @@
 import { diasDesde } from '@/lib/datas'
 import { mesDe } from '@/lib/periodo'
-import { listarContasAReceber, resultadoDoPeriodo } from '@/modulos/financeiro/consultas'
+import {
+  listarCobrancas,
+  resultadoDoPeriodo,
+  somarSaldo,
+  type LinhaDeCobranca,
+} from '@/modulos/financeiro/consultas'
 import { listarOs } from '@/modulos/os/consultas'
 import type { SituacaoOs } from '@/modulos/os/situacoes'
 
@@ -29,7 +34,7 @@ export type Painel = {
   aReceberCentavos: number
   resultadoDoMesCentavos: number
   pendencias: Pendencia[]
-  cobrancas: Awaited<ReturnType<typeof listarContasAReceber>>
+  cobrancas: LinhaDeCobranca[]
 }
 
 const MOTIVO_POR_SITUACAO: Partial<Record<SituacaoOs, string>> = {
@@ -42,9 +47,13 @@ export async function obterPainel(): Promise<Painel> {
   const mes = mesDe()
   const [ordens, cobrancas, resultado] = await Promise.all([
     listarOs({ situacoes: NA_OFICINA }),
-    listarContasAReceber(),
+    listarCobrancas(),
     resultadoDoPeriodo(mes.de, mes.ate),
   ])
+
+  // Só a dívida: previsão de receita nesta tela viraria ruído, porque aqui a
+  // pergunta é o que precisa de ação hoje.
+  const aCobrar = cobrancas.aguardandoPagamento
 
   const pendencias = ordens
     .filter((os) => os.situacao in MOTIVO_POR_SITUACAO)
@@ -62,9 +71,9 @@ export async function obterPainel(): Promise<Painel> {
     naOficina: ordens.length,
     aguardandoAprovacao: ordens.filter((os) => os.situacao === 'orcamento_enviado').length,
     prontoParaEntrega: ordens.filter((os) => os.situacao === 'pronto').length,
-    aReceberCentavos: cobrancas.reduce((soma, conta) => soma + conta.saldoCentavos, 0),
+    aReceberCentavos: somarSaldo(aCobrar),
     resultadoDoMesCentavos: resultado.resultadoCentavos,
     pendencias,
-    cobrancas,
+    cobrancas: aCobrar,
   }
 }

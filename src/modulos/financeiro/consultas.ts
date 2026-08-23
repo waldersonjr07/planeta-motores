@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   clientes,
@@ -9,6 +9,7 @@ import {
   pagamentos,
 } from '@/db/schema'
 import { diasDesde } from '@/lib/datas'
+import type { SituacaoOs } from '@/modulos/os/situacoes'
 import { condicaoDeCobranca, saldoDevedor, type CondicaoCobranca } from './cobranca'
 
 /**
@@ -63,41 +64,66 @@ export async function listarPagamentosDaOs(osId: string) {
     .orderBy(asc(pagamentos.data), asc(pagamentos.criadoEm))
 }
 
-export type ContaAReceber = {
+/**
+ * Dívida de verdade: o serviço foi executado e não foi pago. É o único bloco
+ * que soma no total em aberto.
+ */
+const AGUARDANDO_PAGAMENTO: SituacaoOs[] = ['pronto', 'entregue']
+
+/**
+ * Previsão de receita: o cliente aprovou e o trabalho ainda acontece. Nada
+ * está atrasado aqui, então não soma no total em aberto e não tem coluna DIAS.
+ */
+const EM_ANDAMENTO: SituacaoOs[] = ['aprovado', 'aguardando_peca', 'em_execucao']
+
+export type LinhaDeCobranca = {
   osId: string
   numero: string
   clienteNome: string
   totalCentavos: number
   pagoCentavos: number
   saldoCentavos: number
-  entregueEm: Date | null
-  diasEmAberto: number
+  /** Vazio quando a OS não tem conclusão nem entrega carimbadas. */
+  diasEmAberto: number | null
+}
+
+export type Cobrancas = {
+  aguardandoPagamento: LinhaDeCobranca[]
+  emAndamento: LinhaDeCobranca[]
 }
 
 /**
- * Não é campo, é consulta: assim a lista de cobrança nunca fica desatualizada
- * em relação aos pagamentos lançados.
+ * Da mais antiga para a mais recente. `coalesce` na ordenação e não `nulls
+ * last`: no bloco em andamento nenhuma das duas datas existe, e aí a chegada
+ * do equipamento é a única antiguidade que há.
  */
-export async function listarContasAReceber(): Promise<ContaAReceber[]> {
+const MAIS_ANTIGA_PRIMEIRO = sql`coalesce(
+  ordens_servico.concluido_em, ordens_servico.entregue_em, ordens_servico.recebido_em
+) asc`
+
+async function cobrancasDe(situacoes: SituacaoOs[]): Promise<LinhaDeCobranca[]> {
   const linhas = await db
     .select({
       osId: ordensServico.id,
       numero: ordensServico.numero,
       clienteNome: clientes.nome,
+      concluidoEm: ordensServico.concluidoEm,
       entregueEm: ordensServico.entregueEm,
-      recebidoEm: ordensServico.recebidoEm,
       total: TOTAL_DA_OS,
       pago: PAGO_DA_OS,
     })
     .from(ordensServico)
     .innerJoin(clientes, eq(clientes.id, ordensServico.clienteId))
-    .orderBy(asc(ordensServico.entregueEm), asc(ordensServico.recebidoEm))
+    .where(inArray(ordensServico.situacao, situacoes))
+    .orderBy(MAIS_ANTIGA_PRIMEIRO)
 
   return linhas
     .map((linha) => {
       const totalCentavos = Math.round(Number(linha.total))
       const pagoCentavos = Math.round(Number(linha.pago))
-      const referencia = linha.entregueEm ?? linha.recebidoEm
+      // Nunca `recebidoEm`: é a data de chegada do equipamento, e inflaria o
+      // envelhecimento justamente na coluna que decide quem cobrar primeiro.
+      const referencia = linha.concluidoEm ?? linha.entregueEm
       return {
         osId: linha.osId,
         numero: linha.numero,
@@ -105,11 +131,31 @@ export async function listarContasAReceber(): Promise<ContaAReceber[]> {
         totalCentavos,
         pagoCentavos,
         saldoCentavos: saldoDevedor(totalCentavos, pagoCentavos),
-        entregueEm: linha.entregueEm,
-        diasEmAberto: diasDesde(referencia),
+        diasEmAberto: referencia ? diasDesde(referencia) : null,
       }
     })
     .filter((conta) => conta.saldoCentavos > 0)
+}
+
+/**
+ * Não é campo, é consulta: assim a lista de cobrança nunca fica desatualizada
+ * em relação aos pagamentos lançados.
+ *
+ * Os dois blocos são separados de propósito. Misturar dívida com previsão numa
+ * lista só era o erro do desenho anterior — e OS cancelada, recusada ou com
+ * orçamento ainda sem resposta não é nem uma coisa nem outra: fica fora.
+ */
+export async function listarCobrancas(): Promise<Cobrancas> {
+  const [aguardandoPagamento, emAndamento] = await Promise.all([
+    cobrancasDe(AGUARDANDO_PAGAMENTO),
+    cobrancasDe(EM_ANDAMENTO),
+  ])
+
+  return { aguardandoPagamento, emAndamento }
+}
+
+export function somarSaldo(contas: LinhaDeCobranca[]): number {
+  return contas.reduce((soma, conta) => soma + conta.saldoCentavos, 0)
 }
 
 export async function listarDespesas(periodo: { de?: string; ate?: string } = {}) {

@@ -6,12 +6,65 @@ import { formatarReais } from '@/lib/dinheiro'
 import { hoje, mesDe, rotuloDoMes } from '@/lib/periodo'
 import { acaoRemoverDespesa } from '@/modulos/financeiro/acoes'
 import {
-  listarContasAReceber,
+  listarCobrancas,
   listarDespesas,
   resultadoDoPeriodo,
+  somarSaldo,
+  type LinhaDeCobranca,
 } from '@/modulos/financeiro/consultas'
 import { CATEGORIAS_DESPESA } from '@/modulos/financeiro/esquemas'
 import { FormularioDespesa } from './despesa-formulario'
+
+/**
+ * As duas listas de cobrança compartilham as colunas de dinheiro. A de dívida
+ * ganha DIAS por cima; a de previsão não tem o que envelhecer.
+ */
+function LinhasDeCobranca({
+  contas,
+  comDias,
+}: {
+  contas: LinhaDeCobranca[]
+  comDias?: boolean
+}) {
+  return (
+    <Tabela
+      colunas={[
+        { texto: 'OS' },
+        { texto: 'Cliente' },
+        { texto: 'Total', numerica: true },
+        { texto: 'Pago', numerica: true },
+        { texto: 'Saldo', numerica: true },
+        ...(comDias ? [{ texto: 'Dias', numerica: true }] : []),
+      ]}
+    >
+      {contas.map((conta) => (
+        <Linha key={conta.osId}>
+          <Celula forte>
+            <Link
+              href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
+              className="text-acao hover:underline"
+            >
+              {conta.numero}
+            </Link>
+          </Celula>
+          <Celula>{conta.clienteNome}</Celula>
+          <Celula numerica tom="suave">
+            {formatarReais(conta.totalCentavos)}
+          </Celula>
+          <Celula numerica tom="suave">
+            {formatarReais(conta.pagoCentavos)}
+          </Celula>
+          <Celula numerica forte tom={comDias ? 'alerta' : undefined}>
+            {formatarReais(conta.saldoCentavos)}
+          </Celula>
+          {/* Sem data de conclusão nem de entrega não há o que contar. Vazio é
+              honesto; número errado não. */}
+          {comDias && <Celula numerica>{conta.diasEmAberto ?? '—'}</Celula>}
+        </Linha>
+      ))}
+    </Tabela>
+  )
+}
 
 export default async function PaginaFinanceiro({
   searchParams,
@@ -21,13 +74,15 @@ export default async function PaginaFinanceiro({
   const { mes: mesPedido } = await searchParams
   const periodo = mesDe(mesPedido ? `${mesPedido}-01` : undefined)
 
-  const [aReceber, despesas, resultado] = await Promise.all([
-    listarContasAReceber(),
+  const [cobrancas, despesas, resultado] = await Promise.all([
+    listarCobrancas(),
     listarDespesas(periodo),
     resultadoDoPeriodo(periodo.de, periodo.ate),
   ])
 
-  const totalAReceber = aReceber.reduce((soma, conta) => soma + conta.saldoCentavos, 0)
+  // Só a dívida soma. O que está em curso é previsão de receita: somar as duas
+  // coisas num número só era o que fazia a Lucilene cobrar quem não devia.
+  const totalAReceber = somarSaldo(cobrancas.aguardandoPagamento)
 
   return (
     <>
@@ -37,46 +92,24 @@ export default async function PaginaFinanceiro({
       />
 
       <Secao
-        titulo="Contas a receber"
-        descricao={`Da mais antiga para a mais recente. Total em aberto: ${formatarReais(totalAReceber)}`}
+        titulo="Aguardando pagamento"
+        descricao={`Serviço executado e não pago, da dívida mais antiga para a mais recente. Total em aberto: ${formatarReais(totalAReceber)}`}
       >
-        {aReceber.length === 0 ? (
+        {cobrancas.aguardandoPagamento.length === 0 ? (
           <Vazio>Ninguém devendo.</Vazio>
         ) : (
-          <Tabela
-            colunas={[
-              { texto: 'OS' },
-              { texto: 'Cliente' },
-              { texto: 'Total', numerica: true },
-              { texto: 'Pago', numerica: true },
-              { texto: 'Saldo', numerica: true },
-              { texto: 'Dias', numerica: true },
-            ]}
-          >
-            {aReceber.map((conta) => (
-              <Linha key={conta.osId}>
-                <Celula forte>
-                  <Link
-                    href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
-                    className="text-acao hover:underline"
-                  >
-                    {conta.numero}
-                  </Link>
-                </Celula>
-                <Celula>{conta.clienteNome}</Celula>
-                <Celula numerica tom="suave">
-                  {formatarReais(conta.totalCentavos)}
-                </Celula>
-                <Celula numerica tom="suave">
-                  {formatarReais(conta.pagoCentavos)}
-                </Celula>
-                <Celula numerica forte tom="alerta">
-                  {formatarReais(conta.saldoCentavos)}
-                </Celula>
-                <Celula numerica>{conta.diasEmAberto}</Celula>
-              </Linha>
-            ))}
-          </Tabela>
+          <LinhasDeCobranca contas={cobrancas.aguardandoPagamento} comDias />
+        )}
+      </Secao>
+
+      <Secao
+        titulo="Em andamento"
+        descricao={`Serviço aprovado e ainda em curso: previsão de ${formatarReais(somarSaldo(cobrancas.emAndamento))}, que não entra no total em aberto porque nada está atrasado.`}
+      >
+        {cobrancas.emAndamento.length === 0 ? (
+          <Vazio>Nenhum serviço em curso com valor lançado.</Vazio>
+        ) : (
+          <LinhasDeCobranca contas={cobrancas.emAndamento} />
         )}
       </Secao>
 

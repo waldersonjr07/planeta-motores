@@ -208,6 +208,50 @@ test('a lista filtra por situação e encontra pela busca', async ({ page }) => 
   await expect(page.getByRole('cell', { name: 'Marcos Andrade' })).toBeVisible()
 })
 
+test('a lista esconde OS cancelada, com opção de mostrar', async ({ page }) => {
+  async function abrirOs() {
+    await page.goto('/ordens-servico/nova')
+    await page
+      .getByLabel('Cliente e equipamento')
+      .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+    await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+    await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+  }
+
+  await abrirOs()
+  await page.getByRole('button', { name: /Atualização da OS/ }).click()
+  await page.getByRole('button', { name: /^Cancelado/ }).click()
+  await expect(page.getByText('Ordem de serviço encerrada.')).toBeVisible()
+
+  await abrirOs()
+
+  // A cancelada sai da lista do dia a dia; a outra continua lá.
+  await page.goto('/ordens-servico')
+  await expect(page.getByRole('cell', { name: '2026-0002' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '2026-0001' })).toHaveCount(0)
+
+  // Não some do sistema: o filtro traz de volta.
+  await page.getByLabel('Situação').selectOption('todas')
+  await expect(page.getByRole('cell', { name: '2026-0001' })).toBeVisible()
+})
+
+/** Devolvido e recusado não são serviço malfeito, e continuam à vista. */
+test('a lista continua mostrando OS recusada e devolvida', async ({ page }) => {
+  await page.goto('/ordens-servico/nova')
+  await page
+    .getByLabel('Cliente e equipamento')
+    .selectOption({ label: 'Roçadeira Stihl FS 220 (2T)' })
+  await page.getByRole('button', { name: 'Abrir ordem de serviço' }).click()
+  await expect(page.getByRole('heading', { name: /^OS/ })).toBeVisible()
+
+  await mudarSituacaoNaTela(page, 'Em diagnóstico')
+  await mudarSituacaoNaTela(page, 'Orçamento enviado')
+  await mudarSituacaoNaTela(page, 'Recusado', 'Conserto sai mais caro que outro motor')
+
+  await page.goto('/ordens-servico')
+  await expect(page.getByRole('cell', { name: 'Recusado' })).toBeVisible()
+})
+
 test('cancelar encerra a OS em um clique, sem pedir justificativa', async ({ page }) => {
   await page.goto('/ordens-servico/nova')
   await page

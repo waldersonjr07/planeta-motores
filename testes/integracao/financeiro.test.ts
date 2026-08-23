@@ -4,7 +4,7 @@ import { db } from '../../src/db'
 import { fornecedores, ordensServico, pecas } from '../../src/db/schema'
 import { registrarCompra } from '../../src/modulos/compras/operacoes'
 import {
-  listarContasAReceber,
+  listarCobrancas,
   listarDespesas,
   listarPagamentosDaOs,
   resultadoDoPeriodo,
@@ -16,34 +16,14 @@ import {
   registrarPagamento,
   removerPagamento,
 } from '../../src/modulos/financeiro/operacoes'
-import { adicionarItem, mudarSituacao } from '../../src/modulos/os/operacoes'
 import { limparBanco } from '../ajuda/banco'
-import { cenarioOs } from '../ajuda/os'
+import { cenarioOs, levarAte, osComValor } from '../ajuda/os'
 
 beforeEach(limparBanco)
 
-/** OS com um serviço de R$ 210,00 lançado, pronta para receber pagamento. */
-async function osComValor() {
-  const cenario = await cenarioOs()
-  await adicionarItem(cenario.osId, {
-    tipo: 'servico',
-    referenciaId: cenario.servico.id,
-    quantidade: 1,
-  })
-  return cenario
-}
-
-async function entregar(osId: string) {
-  for (const passo of [
-    'em_diagnostico',
-    'orcamento_enviado',
-    'aprovado',
-    'em_execucao',
-    'pronto',
-    'entregue',
-  ] as const) {
-    await mudarSituacao(osId, passo)
-  }
+/** Dias atrás em milissegundos, para carimbar data no passado. */
+function diasAtras(dias: number): Date {
+  return new Date(Date.now() - dias * 86_400_000)
 }
 
 test('OS com itens e sem pagamento fica em aberto', async () => {
@@ -142,14 +122,15 @@ test('remover pagamento devolve o saldo', async () => {
   expect((await resumoDeCobrancaDaOs(osId)).condicao).toBe('em_aberto')
 })
 
-test('contas a receber traz só OS com saldo, e some quando quita', async () => {
+test('serviço entregue e não pago é dívida, e some quando quita', async () => {
   const { osId } = await osComValor()
-  await entregar(osId)
+  await levarAte(osId, 'entregue')
 
-  const antes = await listarContasAReceber()
-  expect(antes).toHaveLength(1)
-  expect(antes[0].saldoCentavos).toBe(21000)
-  expect(antes[0].diasEmAberto).toBe(0)
+  const antes = await listarCobrancas()
+  expect(antes.aguardandoPagamento).toHaveLength(1)
+  expect(antes.aguardandoPagamento[0].saldoCentavos).toBe(21000)
+  expect(antes.aguardandoPagamento[0].diasEmAberto).toBe(0)
+  expect(antes.emAndamento).toHaveLength(0)
 
   await registrarPagamento({
     osId,
@@ -159,14 +140,146 @@ test('contas a receber traz só OS com saldo, e some quando quita', async () => 
     observacao: null,
   })
 
-  expect(await listarContasAReceber()).toHaveLength(0)
+  expect((await listarCobrancas()).aguardandoPagamento).toHaveLength(0)
 })
 
-test('OS sem valor nenhum não aparece em contas a receber', async () => {
-  const { osId } = await cenarioOs()
-  await mudarSituacao(osId, 'em_diagnostico')
+test('serviço concluído e ainda não retirado também é dívida', async () => {
+  const { osId } = await osComValor()
+  await levarAte(osId, 'pronto')
 
-  expect(await listarContasAReceber()).toHaveLength(0)
+  const cobrancas = await listarCobrancas()
+
+  expect(cobrancas.aguardandoPagamento).toHaveLength(1)
+  expect(cobrancas.emAndamento).toHaveLength(0)
+})
+
+test('OS sem valor nenhum não aparece em cobrança', async () => {
+  const { osId } = await cenarioOs()
+  await levarAte(osId, 'pronto')
+
+  const cobrancas = await listarCobrancas()
+
+  expect(cobrancas.aguardandoPagamento).toHaveLength(0)
+  expect(cobrancas.emAndamento).toHaveLength(0)
+})
+
+/** O defeito relatado: serviço recusado não é dívida do cliente. */
+test('OS cancelada sai da cobrança, mesmo com valor lançado', async () => {
+  const { osId } = await osComValor()
+  await levarAte(osId, 'cancelado')
+
+  const cobrancas = await listarCobrancas()
+
+  expect(cobrancas.aguardandoPagamento).toHaveLength(0)
+  expect(cobrancas.emAndamento).toHaveLength(0)
+})
+
+test('serviço aprovado e em curso é previsão, não dívida', async () => {
+  for (const situacao of ['aprovado', 'aguardando_peca', 'em_execucao'] as const) {
+    await limparBanco()
+    const { osId } = await osComValor()
+    await levarAte(osId, situacao)
+
+    const cobrancas = await listarCobrancas()
+
+    expect(cobrancas.emAndamento).toHaveLength(1)
+    expect(cobrancas.emAndamento[0].saldoCentavos).toBe(21000)
+    expect(cobrancas.aguardandoPagamento).toHaveLength(0)
+  }
+})
+
+/**
+ * Nada foi combinado ainda. Orçamento enviado e sem resposta engordava o total
+ * em aberto com dinheiro que ninguém prometeu pagar.
+ */
+test('o que ainda não foi combinado fica fora dos dois blocos', async () => {
+  for (const situacao of ['recebido', 'em_diagnostico', 'orcamento_enviado'] as const) {
+    await limparBanco()
+    const { osId } = await osComValor()
+    await levarAte(osId, situacao)
+
+    const cobrancas = await listarCobrancas()
+
+    expect(cobrancas.aguardandoPagamento).toHaveLength(0)
+    expect(cobrancas.emAndamento).toHaveLength(0)
+  }
+})
+
+test('o que não vai acontecer fica fora dos dois blocos', async () => {
+  for (const situacao of ['recusado', 'devolvido'] as const) {
+    await limparBanco()
+    const { osId } = await osComValor()
+    await levarAte(osId, situacao)
+
+    const cobrancas = await listarCobrancas()
+
+    expect(cobrancas.aguardandoPagamento).toHaveLength(0)
+    expect(cobrancas.emAndamento).toHaveLength(0)
+  }
+})
+
+/**
+ * `recebidoEm` é a data de chegada do equipamento. Usá-la como referência
+ * inflaria o envelhecimento justamente na coluna que decide quem cobrar
+ * primeiro.
+ */
+test('DIAS conta da conclusão, não da chegada do equipamento', async () => {
+  const { osId } = await osComValor()
+  await levarAte(osId, 'pronto')
+  await db
+    .update(ordensServico)
+    .set({ recebidoEm: diasAtras(10), concluidoEm: diasAtras(2) })
+    .where(eq(ordensServico.id, osId))
+
+  const [conta] = (await listarCobrancas()).aguardandoPagamento
+
+  expect(conta.diasEmAberto).toBe(2)
+})
+
+test('OS entregue sem carimbo de conclusão cai na data de entrega', async () => {
+  const { osId } = await osComValor()
+  await levarAte(osId, 'entregue')
+  await db
+    .update(ordensServico)
+    .set({ concluidoEm: null, entregueEm: diasAtras(5) })
+    .where(eq(ordensServico.id, osId))
+
+  const [conta] = (await listarCobrancas()).aguardandoPagamento
+
+  expect(conta.diasEmAberto).toBe(5)
+})
+
+/** Vazio é honesto; número errado não. */
+test('sem conclusão nem entrega, DIAS fica vazio', async () => {
+  const { osId } = await osComValor()
+  await levarAte(osId, 'pronto')
+  await db
+    .update(ordensServico)
+    .set({ concluidoEm: null, entregueEm: null })
+    .where(eq(ordensServico.id, osId))
+
+  const [conta] = (await listarCobrancas()).aguardandoPagamento
+
+  expect(conta.diasEmAberto).toBeNull()
+})
+
+test('a lista de dívida vem da mais antiga para a mais recente', async () => {
+  const antiga = await osComValor()
+  await levarAte(antiga.osId, 'pronto')
+  await db
+    .update(ordensServico)
+    .set({ concluidoEm: diasAtras(9) })
+    .where(eq(ordensServico.id, antiga.osId))
+
+  const recente = await osComValor()
+  await levarAte(recente.osId, 'pronto')
+
+  const { aguardandoPagamento } = await listarCobrancas()
+
+  expect(aguardandoPagamento.map((conta) => conta.osId)).toEqual([
+    antiga.osId,
+    recente.osId,
+  ])
 })
 
 test('o resultado do período soma pagamentos contra compras e despesas', async () => {

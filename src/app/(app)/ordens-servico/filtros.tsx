@@ -3,8 +3,11 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SITUACOES } from '@/modulos/os/situacoes'
 
+// A primeira opção é o padrão da tela, e o padrão esconde as canceladas: o
+// rótulo diz isso, senão a lista parece estar mentindo sobre "todas".
 const OPCOES = [
-  { valor: '', texto: 'Todas as situações' },
+  { valor: '', texto: 'Todas, menos canceladas' },
+  { valor: 'todas', texto: 'Todas, inclusive canceladas' },
   { valor: 'na_oficina', texto: 'Na oficina (em andamento)' },
   ...Object.entries(SITUACOES).map(([valor, texto]) => ({ valor, texto })),
 ]

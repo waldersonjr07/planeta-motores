@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { MensagemErro } from '@/componentes/mensagem-erro'
+import { formatarReais } from '@/lib/dinheiro'
 import { acaoMudarSituacao } from '@/modulos/os/acoes'
 import { SITUACOES, TRANSICOES, proximaAcao, type SituacaoOs } from '@/modulos/os/situacoes'
 
@@ -14,7 +15,15 @@ const PEDE_MOTIVO: Partial<Record<SituacaoOs, string>> = {
   recusado: 'Por que o cliente recusou?',
 }
 
-export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: SituacaoOs }) {
+export function AcoesSituacao({
+  osId,
+  situacao,
+  pagoCentavos,
+}: {
+  osId: string
+  situacao: SituacaoOs
+  pagoCentavos: number
+}) {
   const [resultado, enviar, pendente] = useActionState(acaoMudarSituacao, null)
   const [aberto, setAberto] = useState(false)
   const [destino, setDestino] = useState<SituacaoOs | null>(null)
@@ -31,6 +40,14 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
   const principal = proximaAcao(situacao)
   const opcoes = TRANSICOES[situacao].filter((para) => para !== situacao)
 
+  /**
+   * Cancelar uma OS que já recebeu dinheiro não é bloqueado — mas também não
+   * pode passar despercebido em um clique.
+   */
+  function pedeConfirmacao(para: SituacaoOs): boolean {
+    return Boolean(PEDE_MOTIVO[para]) || (para === 'cancelado' && pagoCentavos > 0)
+  }
+
   if (opcoes.length === 0) {
     return (
       <p className="rounded-md border border-borda bg-realce px-3 py-2 text-sm text-tinta-suave">
@@ -39,7 +56,9 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
     )
   }
 
-  const motivoPedido = destino ? PEDE_MOTIVO[destino] : undefined
+  const confirmando = destino && pedeConfirmacao(destino) ? destino : null
+  const motivoPedido = confirmando ? PEDE_MOTIVO[confirmando] : undefined
+  const avisaPagamento = confirmando === 'cancelado' && pagoCentavos > 0
 
   return (
     <div className="relative">
@@ -75,18 +94,19 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
           <div className="flex flex-col gap-1.5">
             {opcoes.map((para) => {
               const recomendado = para === principal?.para
-              const pedeMotivo = Boolean(PEDE_MOTIVO[para])
+              const confirma = pedeConfirmacao(para)
               const escolhido = destino === para
 
-              // Quem pede motivo não envia no clique: primeiro abre o campo.
+              // Quem pede confirmação não envia no clique: primeiro abre a
+              // caixa de atenção, com o campo ou o aviso.
               return (
                 <button
                   key={para}
-                  type={pedeMotivo ? 'button' : 'submit'}
-                  name={pedeMotivo ? undefined : 'para'}
-                  value={pedeMotivo ? undefined : para}
+                  type={confirma ? 'button' : 'submit'}
+                  name={confirma ? undefined : 'para'}
+                  value={confirma ? undefined : para}
                   disabled={pendente}
-                  onClick={pedeMotivo ? () => setDestino(para) : undefined}
+                  onClick={confirma ? () => setDestino(para) : undefined}
                   className={`flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
                     escolhido
                       ? 'border-acao bg-acao-fundo'
@@ -115,19 +135,31 @@ export function AcoesSituacao({ osId, situacao }: { osId: string; situacao: Situ
             />
           </label>
 
-          {motivoPedido && (
+          {confirmando && (
             <div className="mt-4 flex flex-col gap-2 rounded-md border border-atencao-borda bg-atencao-fundo p-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-atencao">{motivoPedido}</span>
-                <input
-                  name="motivo"
-                  required
-                  aria-label={motivoPedido}
-                  className="rounded-md border border-atencao-borda bg-superficie px-3 py-2 text-sm"
-                />
-              </label>
-              <Botao type="submit" name="para" value={destino!} disabled={pendente}>
-                {pendente ? 'Salvando…' : `Confirmar: ${SITUACOES[destino!]}`}
+              {/* O dinheiro já entrou: cancelar não devolve nada e não mexe no
+                  resultado do mês em que foi recebido. */}
+              {avisaPagamento && (
+                <p className="text-xs text-atencao">
+                  Esta OS já recebeu {formatarReais(pagoCentavos)}. Cancelar não devolve
+                  esse valor nem o tira do resultado do mês.
+                </p>
+              )}
+
+              {motivoPedido && (
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-atencao">{motivoPedido}</span>
+                  <input
+                    name="motivo"
+                    required
+                    aria-label={motivoPedido}
+                    className="rounded-md border border-atencao-borda bg-superficie px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              <Botao type="submit" name="para" value={confirmando} disabled={pendente}>
+                {pendente ? 'Salvando…' : `Confirmar: ${SITUACOES[confirmando]}`}
               </Botao>
             </div>
           )}

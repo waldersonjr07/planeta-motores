@@ -20,6 +20,16 @@ const NA_OFICINA: SituacaoOs[] = [
   'pronto',
 ]
 
+/**
+ * Cancelada não some do sistema — some da lista. Serviço que não vai acontecer
+ * só atrapalha quem procura trabalho de verdade, e o histórico continua a um
+ * filtro de distância. `devolvido` e `recusado` ficam: o cliente recusou o
+ * orçamento e levou a máquina, o que é desfecho e não engano.
+ */
+const VISIVEIS_POR_PADRAO: SituacaoOs[] = (Object.keys(SITUACOES) as SituacaoOs[]).filter(
+  (situacao) => situacao !== 'cancelado',
+)
+
 const TOM_DA_SITUACAO: Record<SituacaoOs, Tom> = {
   recebido: 'neutro',
   em_diagnostico: 'andamento',
@@ -42,11 +52,13 @@ export default async function PaginaOrdensServico({
   const { busca, situacao } = await searchParams
 
   const situacoes =
-    situacao === 'na_oficina'
-      ? NA_OFICINA
-      : situacao && situacao in SITUACOES
-        ? [situacao as SituacaoOs]
-        : undefined
+    situacao === 'todas'
+      ? undefined
+      : situacao === 'na_oficina'
+        ? NA_OFICINA
+        : situacao && situacao in SITUACOES
+          ? [situacao as SituacaoOs]
+          : VISIVEIS_POR_PADRAO
 
   const lista = await listarOs({ busca, situacoes })
 

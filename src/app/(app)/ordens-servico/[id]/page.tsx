@@ -108,7 +108,11 @@ export default async function FichaOs({
           </p>
         </div>
 
-        <AcoesSituacao osId={os.id} situacao={situacao} />
+        <AcoesSituacao
+          osId={os.id}
+          situacao={situacao}
+          pagoCentavos={cobranca.pagoCentavos}
+        />
       </header>
 
       {/*
