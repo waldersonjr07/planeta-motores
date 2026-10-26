@@ -198,25 +198,29 @@ if [ -n "$COPIA_EXTERNA" ]; then
   registrar "AVISO: enquanto isso o backup existe só no disco desta máquina. Ver docs/backup.md."
 else
   registrar "enviando para $REMOTO/diario"
-  rclone copy "$DESTINO" "$REMOTO/diario" \
+  if rclone copy "$DESTINO" "$REMOTO/diario" \
     --include 'banco-*.sql.gz' \
     --include 'fotos-*.tar.gz' \
-    --log-level NOTICE 2>&1 | tee -a "$LOG"
+    --log-level NOTICE 2>&1 | tee -a "$LOG"; then
 
-  # A cópia mensal nasce do primeiro backup do mês que conseguir subir, não do
-  # dia 1º: se a máquina estiver fora do ar naquela madrugada, o mês inteiro
-  # ficaria sem cópia longa e ninguém perceberia. A pergunta é "já existe uma
-  # deste mês lá?", que é a condição que realmente importa.
-  MES="$(date '+%Y-%m')"
-  if rclone lsf "$REMOTO/mensal/" 2>/dev/null | grep -q "^banco-$MES"; then
-    registrar "cópia mensal de $MES já está no remoto"
+    # A cópia mensal nasce do primeiro backup do mês que conseguir subir, não do
+    # dia 1º: se a máquina estiver fora do ar naquela madrugada, o mês inteiro
+    # ficaria sem cópia longa e ninguém perceberia. A pergunta é "já existe uma
+    # deste mês lá?", que é a condição que realmente importa.
+    MES="$(date '+%Y-%m')"
+    if rclone lsf "$REMOTO/mensal/" 2>/dev/null | grep -q "^banco-$MES"; then
+      registrar "cópia mensal de $MES já está no remoto"
+    else
+      registrar "guardando a cópia mensal de $MES"
+      rclone copy "$ARQ_BANCO" "$REMOTO/mensal/" --log-level NOTICE 2>&1 | tee -a "$LOG" || true
+      rclone copy "$ARQ_FOTOS" "$REMOTO/mensal/" --log-level NOTICE 2>&1 | tee -a "$LOG" || true
+    fi
+
+    COPIA_EXTERNA="enviada"
   else
-    registrar "guardando a cópia mensal de $MES"
-    rclone copy "$ARQ_BANCO" "$REMOTO/mensal/" --log-level NOTICE 2>&1 | tee -a "$LOG"
-    rclone copy "$ARQ_FOTOS" "$REMOTO/mensal/" --log-level NOTICE 2>&1 | tee -a "$LOG"
+    COPIA_EXTERNA="FALHOU (erro ao transferir para $REMOTO/diario)"
+    registrar "ERRO: cópia para fora da VPS falhou."
   fi
-
-  COPIA_EXTERNA="enviada"
 fi
 
 # -------------------------------------------------------------------- retenção

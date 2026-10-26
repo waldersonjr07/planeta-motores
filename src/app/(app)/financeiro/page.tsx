@@ -1,181 +1,168 @@
 import Link from 'next/link'
-import { Botao } from '@/componentes/botao'
-import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
-import { Celula, Linha, Tabela } from '@/componentes/tabela'
+import { CabecalhoPagina, Secao } from '@/componentes/pagina'
 import { formatarReais } from '@/lib/dinheiro'
 import { hoje, mesDe, rotuloDoMes } from '@/lib/periodo'
-import { acaoRemoverDespesa } from '@/modulos/financeiro/acoes'
 import {
   listarCobrancas,
-  listarDespesas,
+  listarFluxoDeCaixa,
   resultadoDoPeriodo,
   somarSaldo,
-  type LinhaDeCobranca,
 } from '@/modulos/financeiro/consultas'
-import { CATEGORIAS_DESPESA } from '@/modulos/financeiro/esquemas'
-import { FormularioDespesa } from './despesa-formulario'
-
-/**
- * As duas listas de cobrança compartilham as colunas de dinheiro. A de dívida
- * ganha DIAS por cima; a de previsão não tem o que envelhecer.
- */
-function LinhasDeCobranca({
-  contas,
-  comDias,
-}: {
-  contas: LinhaDeCobranca[]
-  comDias?: boolean
-}) {
-  return (
-    <Tabela
-      colunas={[
-        { texto: 'OS' },
-        { texto: 'Cliente' },
-        { texto: 'Total', numerica: true },
-        { texto: 'Pago', numerica: true },
-        { texto: 'Saldo', numerica: true },
-        ...(comDias ? [{ texto: 'Dias', numerica: true }] : []),
-      ]}
-    >
-      {contas.map((conta) => (
-        <Linha key={conta.osId}>
-          <Celula forte>
-            <Link
-              href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
-              className="text-acao hover:underline"
-            >
-              {conta.numero}
-            </Link>
-          </Celula>
-          <Celula>{conta.clienteNome}</Celula>
-          <Celula numerica tom="suave">
-            {formatarReais(conta.totalCentavos)}
-          </Celula>
-          <Celula numerica tom="suave">
-            {formatarReais(conta.pagoCentavos)}
-          </Celula>
-          <Celula numerica forte tom={comDias ? 'alerta' : undefined}>
-            {formatarReais(conta.saldoCentavos)}
-          </Celula>
-          {/* Sem data de conclusão nem de entrega não há o que contar. Vazio é
-              honesto; número errado não. */}
-          {comDias && <Celula numerica>{conta.diasEmAberto ?? '—'}</Celula>}
-        </Linha>
-      ))}
-    </Tabela>
-  )
-}
+import { ModalNovaDespesa } from './modal-despesa'
+import { NavegacaoMes } from './navegacao-mes'
+import { TabelaCobrancasPendentes } from './tabela-cobrancas-pendentes'
+import { TabelaFluxoCaixa } from './tabela-fluxo-caixa'
 
 export default async function PaginaFinanceiro({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string }>
+  searchParams: Promise<{ mes?: string; aba?: string }>
 }) {
-  const { mes: mesPedido } = await searchParams
-  const periodo = mesDe(mesPedido ? `${mesPedido}-01` : undefined)
+  const { mes: mesPedido, aba: abaPedida } = await searchParams
+  const mesAtivo = mesPedido || hoje().slice(0, 7)
+  const periodo = mesDe(`${mesAtivo}-01`)
+  const aba = abaPedida === 'cobrancas' ? 'cobrancas' : 'fluxo'
 
-  const [cobrancas, despesas, resultado] = await Promise.all([
+  const [cobrancas, resultado, movimentacoes] = await Promise.all([
     listarCobrancas(),
-    listarDespesas(periodo),
     resultadoDoPeriodo(periodo.de, periodo.ate),
+    listarFluxoDeCaixa(periodo),
   ])
 
-  // Só a dívida soma. O que está em curso é previsão de receita: somar as duas
-  // coisas num número só era o que fazia a Lucilene cobrar quem não devia.
+  // Total das dívidas reais a receber (apenas ordens prontas ou entregues com saldo em aberto)
   const totalAReceber = somarSaldo(cobrancas.aguardandoPagamento)
 
   return (
     <>
       <CabecalhoPagina
         titulo="Financeiro"
-        descricao="Regime de caixa: entrou o que foi pago no período, saiu o que foi comprado e gasto."
+        descricao="Fluxo de caixa em regime financeiro real e controle de cobranças da oficina."
+        acoes={<ModalNovaDespesa hoje={hoje()} />}
       />
 
-      <Secao
-        titulo="Aguardando pagamento"
-        descricao={`Serviço executado e não pago, da dívida mais antiga para a mais recente. Total em aberto: ${formatarReais(totalAReceber)}`}
-      >
-        {cobrancas.aguardandoPagamento.length === 0 ? (
-          <Vazio>Ninguém devendo.</Vazio>
-        ) : (
-          <LinhasDeCobranca contas={cobrancas.aguardandoPagamento} comDias />
-        )}
-      </Secao>
+      {/* Controles de Navegação de Mês */}
+      <NavegacaoMes periodo={periodo} mesReferencia={mesAtivo} aba={aba} />
 
-      <Secao
-        titulo="Em andamento"
-        descricao={`Serviço aprovado e ainda em curso: previsão de ${formatarReais(somarSaldo(cobrancas.emAndamento))}, que não entra no total em aberto porque nada está atrasado.`}
-      >
-        {cobrancas.emAndamento.length === 0 ? (
-          <Vazio>Nenhum serviço em curso com valor lançado.</Vazio>
-        ) : (
-          <LinhasDeCobranca contas={cobrancas.emAndamento} />
-        )}
-      </Secao>
-
-      <Secao titulo="Resultado do período" descricao={rotuloDoMes(periodo)}>
-        <dl className="w-96 text-sm">
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Entradas (pagamentos)</dt>
-            <dd>{formatarReais(resultado.entradasCentavos)}</dd>
+      {/* Top-Level KPI Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Card 1: Entradas */}
+        <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+              Entradas
+            </span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
+              Recebimentos
+            </span>
           </div>
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Compras de peça</dt>
-            <dd>-{formatarReais(resultado.comprasCentavos)}</dd>
-          </div>
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Outras despesas</dt>
-            <dd>-{formatarReais(resultado.despesasCentavos)}</dd>
-          </div>
-          <div className="mt-1 flex justify-between border-t border-borda pt-2 text-base font-semibold">
-            <dt>Resultado</dt>
-            <dd className={resultado.resultadoCentavos < 0 ? 'text-alerta' : 'text-ok'}>
-              {formatarReais(resultado.resultadoCentavos)}
-            </dd>
-          </div>
-        </dl>
-      </Secao>
-
-      <Secao titulo="Despesas" descricao={rotuloDoMes(periodo)}>
-        <div className="flex flex-col gap-5">
-          {despesas.length === 0 ? (
-            <Vazio>Nenhuma despesa lançada no período.</Vazio>
-          ) : (
-            <Tabela
-              colunas={[
-                { texto: 'Data' },
-                { texto: 'Categoria' },
-                { texto: 'Descrição' },
-                { texto: 'Valor', numerica: true },
-                { texto: 'Ações', acao: true },
-              ]}
-            >
-              {despesas.map((despesa) => (
-                <Linha key={despesa.id}>
-                  <Celula>{despesa.data.split('-').reverse().join('/')}</Celula>
-                  <Celula tom="suave">{CATEGORIAS_DESPESA[despesa.categoria]}</Celula>
-                  <Celula>{despesa.descricao ?? '—'}</Celula>
-                  <Celula numerica forte>
-                    {formatarReais(despesa.valorCentavos)}
-                  </Celula>
-                  <Celula numerica>
-                    <form action={acaoRemoverDespesa}>
-                      <input type="hidden" name="despesaId" value={despesa.id} />
-                      <Botao variante="discreto" type="submit">
-                        Remover
-                      </Botao>
-                    </form>
-                  </Celula>
-                </Linha>
-              ))}
-            </Tabela>
-          )}
-
-          <div className="border-t border-borda pt-5">
-            <FormularioDespesa hoje={hoje()} />
-          </div>
+          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">
+            {formatarReais(resultado.entradasCentavos)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+            Pagamentos de serviços recebidos no mês
+          </p>
         </div>
-      </Secao>
+
+        {/* Card 2: Saídas */}
+        <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+              Saídas
+            </span>
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-800 dark:bg-red-500/10 dark:text-red-400">
+              Despesas & Compras
+            </span>
+          </div>
+          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-red-700 dark:text-red-400">
+            {formatarReais(resultado.saidasCentavos)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+            Compras de peças ({formatarReais(resultado.comprasCentavos)}) + despesas ({formatarReais(resultado.despesasCentavos)})
+          </p>
+        </div>
+
+        {/* Card 3: Resultado Líquido */}
+        <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+              Resultado Líquido
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                resultado.resultadoCentavos >= 0
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+                  : 'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
+              }`}
+            >
+              {resultado.resultadoCentavos >= 0 ? 'Superávit' : 'Déficit'}
+            </span>
+          </div>
+          <p
+            className={`mt-3 font-mono text-3xl font-semibold tracking-tight ${
+              resultado.resultadoCentavos >= 0
+                ? 'text-emerald-700 dark:text-emerald-400'
+                : 'text-red-700 dark:text-red-400'
+            }`}
+          >
+            {formatarReais(resultado.resultadoCentavos)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+            Saldo real do período (Entradas - Saídas)
+          </p>
+        </div>
+      </div>
+
+      {/* Separação de Abas do Financeiro */}
+      <nav aria-label="Seções do financeiro" className="flex items-center gap-2 border-b border-slate-200 pb-1 dark:border-zinc-800">
+        <Link
+          href={`/financeiro?mes=${mesAtivo}&aba=fluxo`}
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            aba === 'fluxo'
+              ? 'border-b-2 border-blue-600 bg-blue-50 font-semibold text-blue-700 dark:border-blue-500 dark:bg-blue-600/15 dark:text-blue-400'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          Fluxo de Caixa
+          <span className="ml-2 font-mono text-xs text-slate-500 dark:text-zinc-500">({movimentacoes.length})</span>
+        </Link>
+
+        <Link
+          href={`/financeiro?mes=${mesAtivo}&aba=cobrancas`}
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            aba === 'cobrancas'
+              ? 'border-b-2 border-blue-600 bg-blue-50 font-semibold text-blue-700 dark:border-blue-500 dark:bg-blue-600/15 dark:text-blue-400'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          Cobranças Pendentes
+          {cobrancas.aguardandoPagamento.length > 0 && (
+            <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 font-mono text-xs font-semibold text-red-800 dark:bg-red-500/20 dark:text-red-400">
+              {cobrancas.aguardandoPagamento.length}
+            </span>
+          )}
+        </Link>
+      </nav>
+
+      {/* Conteúdo da Aba Selecionada */}
+      {aba === 'fluxo' ? (
+        <Secao
+          titulo="Extrato de Fluxo de Caixa"
+          descricao={`Movimentações financeiras registradas em ${rotuloDoMes(periodo)}.`}
+        >
+          <TabelaFluxoCaixa itens={movimentacoes} />
+        </Secao>
+      ) : (
+        <Secao
+          titulo="Cobranças Pendentes"
+          descricao="Apenas ordens de serviço com serviço concluído ou equipamento entregue que possuem saldo em aberto."
+        >
+          <TabelaCobrancasPendentes
+            contas={cobrancas.aguardandoPagamento}
+            totalEmAberto={totalAReceber}
+          />
+        </Secao>
+      )}
     </>
   )
 }
+

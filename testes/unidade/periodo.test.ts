@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { anoCorrente, hoje, mesDe, rotuloDoMes } from '../../src/lib/periodo'
+import { anoCorrente, hoje, mesAnterior, mesDe, mesSeguinte, rotuloDoMes } from '../../src/lib/periodo'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -61,3 +61,11 @@ test('acerta meses de 30 dias e fevereiro', () => {
 test('o rótulo sai por extenso em português', () => {
   expect(rotuloDoMes(mesDe('2026-07-15'))).toBe('julho de 2026')
 })
+
+test('mesAnterior e mesSeguinte navegam pelos meses e virada de ano', () => {
+  expect(mesAnterior('2026-10')).toBe('2026-09')
+  expect(mesAnterior('2026-01')).toBe('2025-12')
+  expect(mesSeguinte('2026-10')).toBe('2026-11')
+  expect(mesSeguinte('2026-12')).toBe('2027-01')
+})
+

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Etiqueta, type Tom } from '@/componentes/etiqueta'
-import { Cartao, Dado } from '@/componentes/pagina'
+import { Cartao } from '@/componentes/pagina'
 import { Voltar } from '@/componentes/voltar'
 import { formatarDataHora } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
@@ -9,7 +9,7 @@ import { hoje } from '@/lib/periodo'
 import { listarPecas } from '@/modulos/catalogo/pecas-consultas'
 import { listarServicos } from '@/modulos/catalogo/servicos-consultas'
 import { obterConfiguracoes } from '@/modulos/configuracoes/consultas'
-import { CONDICOES, type CondicaoCobranca } from '@/modulos/financeiro/cobranca'
+import { CONDICOES } from '@/modulos/financeiro/cobranca'
 import { listarPagamentosDaOs, resumoDeCobrancaDaOs } from '@/modulos/financeiro/consultas'
 import { obterOs } from '@/modulos/os/consultas'
 import { SITUACOES, aceitaAlteracaoDeItem, type SituacaoOs } from '@/modulos/os/situacoes'
@@ -40,13 +40,6 @@ const TOM_DA_SITUACAO: Record<SituacaoOs, Tom> = {
   recusado: 'encerrado',
   devolvido: 'encerrado',
   cancelado: 'encerrado',
-}
-
-const TOM_DA_COBRANCA: Record<CondicaoCobranca, 'neutro' | 'alerta' | 'ok'> = {
-  sem_valor: 'neutro',
-  em_aberto: 'alerta',
-  parcial: 'alerta',
-  quitada: 'ok',
 }
 
 export default async function FichaOs({
@@ -87,64 +80,112 @@ export default async function FichaOs({
         <Voltar href="/ordens-servico" texto="Voltar para ordens de serviço" />
       </div>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* O número é como a oficina fala da OS: é ele que ancora a ficha. */}
-            <h1 className="text-2xl font-semibold tracking-tight">OS {os.numero}</h1>
-            <Etiqueta tom={TOM_DA_SITUACAO[situacao]}>{SITUACOES[situacao]}</Etiqueta>
+      {/* Hero Card Consolidado no topo da OS */}
+      <div className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+        {/* Linha superior com Identificação, Situação, Cliente e Ações */}
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5 dark:border-zinc-800">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-mono text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+                OS {os.numero}
+              </h1>
+              <Etiqueta tom={TOM_DA_SITUACAO[situacao]}>{SITUACOES[situacao]}</Etiqueta>
+              {os.versaoOrcamento > 0 && (
+                <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                  Orçamento v{os.versaoOrcamento}
+                </span>
+              )}
+            </div>
+
+            <p className="mt-1.5 text-sm text-slate-600 dark:text-zinc-400">
+              <Link
+                href={`/clientes/${os.cliente.id}`}
+                className="font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                {os.cliente.nome}
+              </Link>
+              {' · '}
+              <span className="text-slate-800 dark:text-zinc-300">{os.equipamento.descricao}</span>
+              {os.equipamento.numeroSerie && (
+                <> · série <span className="font-mono text-slate-600 dark:text-zinc-400">{os.equipamento.numeroSerie}</span></>
+              )}
+            </p>
           </div>
 
-          <p className="mt-1.5 text-sm text-tinta-suave">
-            <Link
-              href={`/clientes/${os.cliente.id}`}
-              className="text-acao hover:underline"
-            >
-              {os.cliente.nome}
-            </Link>
-            {' · '}
-            {os.equipamento.descricao}
-            {os.equipamento.numeroSerie && ` · série ${os.equipamento.numeroSerie}`}
-          </p>
+          <AcoesSituacao
+            osId={os.id}
+            situacao={situacao}
+            pagoCentavos={cobranca.pagoCentavos}
+          />
         </div>
 
-        <AcoesSituacao
-          osId={os.id}
-          situacao={situacao}
-          pagoCentavos={cobranca.pagoCentavos}
-        />
-      </header>
+        {/* 4 Indicadores Financeiros Consolidados do Hero Card */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3.5 transition-colors dark:border-zinc-800/80 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+              Valor Total
+            </span>
+            <span className="font-mono text-xl font-bold text-slate-900 dark:text-zinc-100">
+              {formatarReais(os.totais.totalCentavos)}
+            </span>
+          </div>
 
-      {/*
-        Grupo nomeado: os mesmos valores reaparecem na aba de orçamento e na de
-        pagamentos, e é daqui que se lê o resumo da OS.
-      */}
-      <dl
-        role="group"
-        aria-label="Resumo da OS"
-        className="flex flex-wrap gap-x-10 gap-y-3 rounded-lg border border-borda bg-superficie px-5 py-4"
-      >
-        <Dado rotulo="Total">{formatarReais(os.totais.totalCentavos)}</Dado>
-        <Dado rotulo="Cobrança" tom={TOM_DA_COBRANCA[cobranca.condicao]}>
-          {CONDICOES[cobranca.condicao]}
-        </Dado>
-        {cobranca.saldoCentavos > 0 && (
-          <Dado rotulo="Saldo devedor" tom="alerta">
-            {formatarReais(cobranca.saldoCentavos)}
-          </Dado>
-        )}
-        {os.versaoOrcamento > 0 && (
-          <Dado rotulo="Orçamento">versão {os.versaoOrcamento}</Dado>
-        )}
-      </dl>
+          <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3.5 transition-colors dark:border-zinc-800/80 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+              Valor Pago
+            </span>
+            <span
+              className={`font-mono text-xl font-bold ${
+                cobranca.pagoCentavos > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'
+              }`}
+            >
+              {formatarReais(cobranca.pagoCentavos)}
+            </span>
+          </div>
 
-      {/* Aviso, não bloqueio: entregar devendo é decisão da Lucilene. */}
-      {situacao === 'pronto' && cobranca.saldoCentavos > 0 && (
-        <p className="rounded-lg border border-atencao-borda bg-atencao-fundo px-5 py-3 text-sm text-atencao">
-          Esta ordem tem <strong>{formatarReais(cobranca.saldoCentavos)}</strong> em aberto. A
-          entrega não fica bloqueada — o saldo continua em contas a receber.
-        </p>
-      )}
+          <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3.5 transition-colors dark:border-zinc-800/80 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+              Saldo Devedor
+            </span>
+            <span
+              className={`font-mono text-xl font-bold ${
+                cobranca.saldoCentavos > 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'
+              }`}
+            >
+              {formatarReais(cobranca.saldoCentavos)}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3.5 transition-colors dark:border-zinc-800/80 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+              Situação da Cobrança
+            </span>
+            <div className="mt-0.5">
+              <span
+                className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${
+                  cobranca.condicao === 'quitada'
+                    ? 'border border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : cobranca.condicao === 'parcial' || cobranca.condicao === 'em_aberto'
+                      ? 'border border-red-200 bg-red-100 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400'
+                      : 'border border-slate-300 bg-slate-100 text-slate-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                {CONDICOES[cobranca.condicao]}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Aviso de atenção quando concluída com saldo pendente */}
+        {situacao === 'pronto' && cobranca.saldoCentavos > 0 && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+            <span aria-hidden="true">⚠️</span>
+            <span>
+              Esta ordem tem <strong className="font-mono">{formatarReais(cobranca.saldoCentavos)}</strong> em aberto. A entrega não fica bloqueada — o saldo continua em contas a receber.
+            </span>
+          </div>
+        )}
+      </div>
 
       <Cartao
         barra={
@@ -156,15 +197,15 @@ export default async function FichaOs({
                   key={item.chave}
                   href={`/ordens-servico/${id}?aba=${item.chave}`}
                   aria-current={ativa ? 'page' : undefined}
-                  className={`rounded-md px-3 py-1.5 text-sm ${
+                  className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                     ativa
-                      ? 'bg-acao-fundo font-medium text-acao-escura'
-                      : 'text-tinta-suave hover:bg-realce hover:text-tinta'
+                      ? 'bg-blue-50 font-semibold text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
                   }`}
                 >
                   {item.titulo}
                   {contadores[item.chave] ? (
-                    <span className="ml-1.5 text-tinta-fraca">
+                    <span className="ml-1.5 font-mono text-xs text-slate-500 dark:text-zinc-500">
                       ({contadores[item.chave]})
                     </span>
                   ) : null}

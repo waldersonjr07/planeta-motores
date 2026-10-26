@@ -37,9 +37,13 @@ export function eTerminal(situacao: SituacaoOs): boolean {
   return TRANSICOES[situacao].length === 0
 }
 
-/** OS encerrada não recebe item novo — nem para "acertar" o valor na entrega. */
+/**
+ * OS encerrada ou com serviço concluído ('pronto') não recebe item novo — nem
+ * para "acertar" o valor na entrega. Para alterar peças ou serviços em 'pronto',
+ * a OS precisa voltar para 'em_execucao', garantindo a integridade do estoque físico.
+ */
 export function aceitaAlteracaoDeItem(situacao: SituacaoOs): boolean {
-  return !eTerminal(situacao)
+  return !eTerminal(situacao) && situacao !== 'pronto'
 }
 
 const PROXIMA: Partial<Record<SituacaoOs, { rotulo: string; para: SituacaoOs }>> = {

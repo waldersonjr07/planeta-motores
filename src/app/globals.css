@@ -1,75 +1,98 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
- * Paleta tirada do emblema da Planeta Motores: o marinho é o campo do logo, o
- * aço é o anel e o letreiro, e o teal vem dos continentes do planeta.
- *
- * Regra de uso: o marinho carrega a marca (menu e tela de entrada), o aço faz
- * estrutura, e o teal aparece uma vez só — marcando onde você está no menu. O
- * resto da tela fica claro e quieto, porque a Lucilene passa o dia aqui e cor
- * saturada em área grande cansa. Âmbar, vermelho e verde continuam reservados
- * para quando o número pede atenção.
+ * Tema Corporativo - Planeta Motores
+ * Light Mode (padrão): Fundo slate-50 (#f8fafc), superfícies brancas (#ffffff), bordas slate-200 (#e2e8f0),
+ * textos slate-900 (#0f172a) e slate-600 (#475569).
+ * Dark Mode: Fundo quase preto zinc-950 (#09090b), superfícies zinc-900 (#18181b), bordas zinc-800 (#27272a),
+ * textos zinc-100 (#f4f4f5) e zinc-400 (#a1a1aa).
+ * Tipografia: Space Grotesk no corpo/estrutura e Space Mono estritamente para números, datas e valores.
  */
 @theme {
-  --color-marca: #16283f;
-  --color-marca-clara: #1d3350;
-  --color-marca-borda: #2a3f5f;
-  --color-marca-texto: #afbbcb;
-  --color-aco: #c8cdd3;
-  --color-planeta: #5fb3b8;
-
-  --color-tinta: #16202a;
-  --color-tinta-suave: #5b6976;
-  --color-tinta-fraca: #8b97a3;
-
-  --color-fundo: #f6f7f9;
-  --color-superficie: #ffffff;
-  --color-realce: #eef1f5;
-
-  --color-borda: #dde2e8;
-  --color-borda-forte: #c3ccd6;
-
-  /* Azul do oceano do planeta, no emblema. */
-  --color-acao: #1e5391;
-  --color-acao-escura: #143d6e;
-  --color-acao-fundo: #eaf1f9;
-
-  --color-atencao: #9a5b06;
-  --color-atencao-fundo: #fdf4e5;
-  --color-atencao-borda: #eccf9c;
-
-  --color-alerta: #a3291f;
-  --color-alerta-fundo: #fdf0ee;
-
-  --color-ok: #1c6b45;
-  --color-ok-fundo: #eef7f2;
-
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
+
+  --font-mono:
+    var(--font-space-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+
+  --color-acao: #2563eb;
+  --color-acao-escura: #1d4ed8;
+  --color-planeta: #3b82f6;
 }
 
 :root {
   color-scheme: light;
+  --color-fundo: #f8fafc;
+  --color-superficie: #ffffff;
+  --color-realce: #f1f5f9;
+  --color-borda: #e2e8f0;
+  --color-borda-forte: #cbd5e1;
+  --color-tinta: #0f172a;
+  --color-tinta-suave: #475569;
+  --color-tinta-fraca: #94a3b8;
+  --color-marca-texto: #475569;
+
+  --color-acao-fundo: rgba(37, 99, 235, 0.08);
+
+  --color-ok: #047857;
+  --color-ok-fundo: #d1fae5;
+
+  --color-alerta: #b91c1c;
+  --color-alerta-fundo: #fee2e2;
+
+  --color-atencao: #b45309;
+  --color-atencao-fundo: #fef3c7;
+  --color-atencao-borda: #fde68a;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-fundo: #09090b;
+  --color-superficie: #18181b;
+  --color-realce: #27272a;
+  --color-borda: #27272a;
+  --color-borda-forte: #3f3f46;
+  --color-tinta: #f4f4f5;
+  --color-tinta-suave: #a1a1aa;
+  --color-tinta-fraca: #71717a;
+  --color-marca-texto: #a1a1aa;
+
+  --color-acao-fundo: rgba(37, 99, 235, 0.15);
+
+  --color-ok: #34d399;
+  --color-ok-fundo: rgba(16, 185, 129, 0.12);
+
+  --color-alerta: #f87171;
+  --color-alerta-fundo: rgba(239, 68, 68, 0.12);
+
+  --color-atencao: #fbbf24;
+  --color-atencao-fundo: rgba(245, 158, 11, 0.12);
+  --color-atencao-borda: rgba(245, 158, 11, 0.25);
 }
 
 body {
   background: var(--color-fundo);
   color: var(--color-tinta);
   font-family: var(--font-sans);
-  /*
-   * Algarismos tabulares em todo o sistema. Numa tela cheia de valor, saldo e
-   * número de OS, é o que faz as colunas empilharem alinhadas e permite
-   * comparar de relance em vez de ler dígito a dígito.
-   */
   font-variant-numeric: tabular-nums;
 }
 
-/* Foco sempre visível: o cadastro é feito muito no teclado. */
+/* Space Mono estritamente para valores financeiros, datas, quantidades e números de OS */
+.font-mono,
+[data-mono] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco acessível com bom contraste em ambos os temas */
 :focus-visible {
   outline: 2px solid var(--color-acao);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

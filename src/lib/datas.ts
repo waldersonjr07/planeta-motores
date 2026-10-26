@@ -82,3 +82,47 @@ export function diasDesde(valor: Date, referencia = new Date()): number {
   const umDia = 86_400_000
   return Math.round((diaCivil(referencia) - diaCivil(valor)) / umDia)
 }
+
+/**
+ * Início do dia civil de Cáceres (00:00:00.000 no fuso de Cuiabá / UTC-4).
+ * Garante que filtros de data em strings "AAAA-MM-DD" não sofram com o desvio
+ * de "new Date(string)" em UTC, o que puxaria registros da noite do dia anterior.
+ */
+export function inicioDoDia(dataOuIso: string | Date): Date {
+  if (dataOuIso instanceof Date) {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: FUSO,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dataOuIso)
+    return new Date(`${partes}T00:00:00-04:00`)
+  }
+  const texto = dataOuIso.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    return new Date(`${texto}T00:00:00-04:00`)
+  }
+  return new Date(texto)
+}
+
+/**
+ * Fim do dia civil de Cáceres (23:59:59.999 no fuso de Cuiabá / UTC-4).
+ */
+export function fimDoDia(dataOuIso: string | Date): Date {
+  if (dataOuIso instanceof Date) {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: FUSO,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dataOuIso)
+    return new Date(`${partes}T23:59:59.999-04:00`)
+  }
+  const texto = dataOuIso.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    return new Date(`${texto}T23:59:59.999-04:00`)
+  }
+  const d = new Date(texto)
+  d.setHours(23, 59, 59, 999)
+  return d
+}

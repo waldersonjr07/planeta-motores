@@ -13,9 +13,9 @@ export function CabecalhoPagina({
   return (
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">{titulo}</h1>
         {descricao && (
-          <p className="mt-1 max-w-2xl text-sm text-tinta-suave">{descricao}</p>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-zinc-400">{descricao}</p>
         )}
       </div>
       {acoes && <div className="flex items-center gap-2">{acoes}</div>}
@@ -24,8 +24,8 @@ export function CabecalhoPagina({
 }
 
 /**
- * Bloco de conteúdo com nome próprio. Vira `role="region"` acessível, o que
- * separa de verdade as três coisas que antes se empilhavam parecendo uma só.
+ * Bloco de conteúdo com nome próprio. Vira `role="region"` acessível,
+ * com suporte ao Light Mode (bg-white border-slate-200 shadow-sm) e Dark Mode (dark:bg-zinc-900 dark:border-zinc-800 dark:shadow-none).
  */
 export function Secao({
   titulo,
@@ -41,13 +41,13 @@ export function Secao({
   return (
     <section
       aria-label={titulo}
-      className="rounded-lg border border-borda bg-superficie"
+      className="rounded-lg border border-slate-200 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-borda px-5 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-zinc-800">
         <div>
-          <h2 className="font-semibold">{titulo}</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-zinc-100">{titulo}</h2>
           {descricao && (
-            <p className="mt-0.5 max-w-2xl text-sm text-tinta-suave">{descricao}</p>
+            <p className="mt-0.5 max-w-2xl text-sm text-slate-600 dark:text-zinc-400">{descricao}</p>
           )}
         </div>
         {acoes && <div className="flex items-center gap-2">{acoes}</div>}
@@ -59,8 +59,7 @@ export function Secao({
 
 /**
  * Cartão sem título próprio, para o conteúdo principal de uma tela que já se
- * apresenta no `h1`. Repetir o título ali criaria dois cabeçalhos com o mesmo
- * nome na mesma página.
+ * apresenta no `h1`.
  */
 export function Cartao({
   children,
@@ -70,8 +69,8 @@ export function Cartao({
   barra?: ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-borda bg-superficie">
-      {barra && <div className="border-b border-borda px-5 py-3">{barra}</div>}
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+      {barra && <div className="border-b border-slate-200 px-5 py-3 dark:border-zinc-800">{barra}</div>}
       <div className="px-5 py-4">{children}</div>
     </div>
   )
@@ -79,7 +78,7 @@ export function Cartao({
 
 /** Texto de tela vazia: diz o que fazer, não só que não há nada. */
 export function Vazio({ children }: { children: ReactNode }) {
-  return <p className="py-2 text-sm text-tinta-suave">{children}</p>
+  return <p className="py-2 text-sm text-slate-500 dark:text-zinc-400">{children}</p>
 }
 
 /** Rótulo pequeno de dado, para pares rótulo/valor fora de formulário. */
@@ -87,18 +86,24 @@ export function Dado({
   rotulo,
   children,
   tom,
+  mono,
 }: {
   rotulo: string
   children: ReactNode
   tom?: 'neutro' | 'alerta' | 'ok'
+  mono?: boolean
 }) {
   const cor =
-    tom === 'alerta' ? 'text-alerta' : tom === 'ok' ? 'text-ok' : 'text-tinta'
+    tom === 'alerta'
+      ? 'text-red-600 dark:text-red-400'
+      : tom === 'ok'
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-slate-900 dark:text-zinc-100'
 
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-tinta-fraca">{rotulo}</dt>
-      <dd className={`mt-0.5 font-semibold ${cor}`}>{children}</dd>
+      <dt className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400">{rotulo}</dt>
+      <dd className={`mt-0.5 font-semibold ${mono ? 'font-mono' : ''} ${cor}`}>{children}</dd>
     </div>
   )
 }

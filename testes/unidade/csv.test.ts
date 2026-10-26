@@ -42,3 +42,25 @@ test('lista vazia devolve texto vazio', () => {
 test('as colunas informadas mandam na ordem', () => {
   expect(paraCsv([{ b: 2, a: 1 }], ['a', 'b'])).toBe('a,b\r\n1,2')
 })
+
+test('escapa caracteres que induzem execução de fórmula no Excel/Sheets', () => {
+  const csv = paraCsv([
+    {
+      formula: '=1+1',
+      comando: '@SUM(A1)',
+      positivo: '+55 65 9999',
+      hifen: '- Defeito relatado',
+      numeroNegativo: -15.5,
+      numeroString: '-1.000',
+    },
+  ])
+
+  expect(csv).toContain("'=1+1")
+  expect(csv).toContain("'@SUM(A1)")
+  expect(csv).toContain("'+55 65 9999")
+  expect(csv).toContain("'- Defeito relatado")
+  // Números legítimos continuam numéricos normais, sem apóstrofo
+  expect(csv).toContain(',-15.5,')
+  expect(csv).toContain(',-1.000')
+})
+

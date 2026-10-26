@@ -30,8 +30,16 @@ test('telefone sem DDI recebe o 55', () => {
   expect(linkDoWhatsapp('(11) 98765-4321', 'oi')).toContain('wa.me/5511987654321')
 })
 
+test('telefone com DDD 55 (11 dígitos ou menos) recebe o DDI 55 sem ser confundido', () => {
+  // DDD 55 (Santa Maria/RS) com 11 dígitos
+  expect(linkDoWhatsapp('(55) 99876-5432', 'oi')).toContain('wa.me/5555998765432')
+  // DDD 55 fixo com 10 dígitos
+  expect(linkDoWhatsapp('(55) 3220-1234', 'oi')).toContain('wa.me/555532201234')
+})
+
 test('telefone que já tem DDI não duplica', () => {
   expect(linkDoWhatsapp('5511987654321', 'oi')).toContain('wa.me/5511987654321')
+  expect(linkDoWhatsapp('5555998765432', 'oi')).toContain('wa.me/5555998765432')
 })
 
 test('a mensagem vai codificada para URL', () => {

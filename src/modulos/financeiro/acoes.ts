@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { parsearReais } from '@/lib/dinheiro'
 import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
 import { exigirUsuario } from '@/modulos/auth/guarda'
@@ -56,7 +57,11 @@ export async function acaoRegistrarPagamento(
 export async function acaoRemoverPagamento(formulario: FormData): Promise<void> {
   await exigirUsuario()
 
-  await removerPagamento(String(formulario.get('pagamentoId') ?? ''))
+  const idBruto = String(formulario.get('pagamentoId') ?? '')
+  const validacao = z.string().uuid().safeParse(idBruto)
+  if (!validacao.success) return
+
+  await removerPagamento(validacao.data)
   revalidarFinanceiro(String(formulario.get('osId') ?? ''))
 }
 
@@ -88,6 +93,10 @@ export async function acaoRegistrarDespesa(
 export async function acaoRemoverDespesa(formulario: FormData): Promise<void> {
   await exigirUsuario()
 
-  await removerDespesa(String(formulario.get('despesaId') ?? ''))
+  const idBruto = String(formulario.get('despesaId') ?? '')
+  const validacao = z.string().uuid().safeParse(idBruto)
+  if (!validacao.success) return
+
+  await removerDespesa(validacao.data)
   revalidarFinanceiro()
 }

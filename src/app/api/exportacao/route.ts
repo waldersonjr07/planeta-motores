@@ -2,11 +2,21 @@ import JSZip from 'jszip'
 import { NextResponse } from 'next/server'
 import { hoje } from '@/lib/periodo'
 import { usuarioAtual } from '@/modulos/auth/guarda'
+import { verificarLimiteDeRotas } from '@/modulos/auth/limitador-rotas'
 import { gerarExportacao } from '@/modulos/exportacao/pacote'
 
 export async function GET() {
-  if (!(await usuarioAtual())) {
+  const usuario = await usuarioAtual()
+  if (!usuario) {
     return new NextResponse('Não autorizado', { status: 401 })
+  }
+
+  // Prevenção contra DoS: limite de 10 exportações por minuto por usuário
+  if (!verificarLimiteDeRotas(`export:${usuario.id}`, 10, 60_000)) {
+    return new NextResponse('Muitas requisições de exportação. Aguarde um minuto.', {
+      status: 429,
+      headers: { 'Retry-After': '60' },
+    })
   }
 
   const arquivos = await gerarExportacao()

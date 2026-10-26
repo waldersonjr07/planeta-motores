@@ -23,7 +23,7 @@ function casarExata(opcoes: OpcaoCombo[], alvo: string): OpcaoCombo | undefined 
 }
 
 const CONTROLE =
-  'w-full rounded-md border border-borda-forte bg-superficie px-3 py-2 text-sm placeholder:text-tinta-fraca'
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600'
 
 export function CampoCombo({
   rotulo,
@@ -102,7 +102,7 @@ export function CampoCombo({
     <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
       <label
         htmlFor={`${idBase}-entrada`}
-        className="text-xs font-medium uppercase tracking-wide text-tinta-suave"
+        className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-zinc-400"
       >
         {rotulo}
       </label>
@@ -159,7 +159,7 @@ export function CampoCombo({
           <ul
             id={`${idBase}-lista`}
             role="listbox"
-            className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md border border-borda-forte bg-superficie py-1 text-sm shadow-lg"
+            className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md border border-slate-200 bg-white py-1 text-sm shadow-xl shadow-slate-300/40 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/50"
           >
             {filtradas.map((opcao, posicao) => (
               <li
@@ -167,8 +167,10 @@ export function CampoCombo({
                 id={`${idBase}-opcao-${posicao}`}
                 role="option"
                 aria-selected={posicao === indice}
-                className={`cursor-pointer px-3 py-1.5 ${
-                  posicao === indice ? 'bg-acao-fundo' : ''
+                className={`cursor-pointer px-3 py-1.5 transition-colors ${
+                  posicao === indice
+                    ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-600/20 dark:text-blue-400'
+                    : 'text-slate-800 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
                 }`}
                 onMouseDown={() => selecionar(posicao)}
                 onMouseEnter={() => setIndice(posicao)}
@@ -182,8 +184,10 @@ export function CampoCombo({
                 id={`${idBase}-opcao-${filtradas.length}`}
                 role="option"
                 aria-selected={indice === filtradas.length}
-                className={`cursor-pointer border-t border-borda px-3 py-1.5 font-medium text-acao ${
-                  indice === filtradas.length ? 'bg-acao-fundo' : ''
+                className={`cursor-pointer border-t border-slate-200 px-3 py-1.5 font-medium text-blue-600 transition-colors dark:border-zinc-800 dark:text-blue-400 ${
+                  indice === filtradas.length
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-600/20 dark:text-blue-300'
+                    : 'hover:bg-slate-100 dark:hover:bg-zinc-800'
                 }`}
                 onMouseDown={() => selecionar(filtradas.length)}
                 onMouseEnter={() => setIndice(filtradas.length)}
@@ -200,7 +204,8 @@ export function CampoCombo({
       <input type="hidden" name={`${nome}Id`} value={id ?? ''} />
       <input type="hidden" name={`${nome}Nome`} value={nomeNovo} />
 
-      {erro && <span className="text-xs text-alerta">{erro}</span>}
+      {erro && <span className="text-xs text-red-600 dark:text-red-400">{erro}</span>}
     </div>
   )
 }
+

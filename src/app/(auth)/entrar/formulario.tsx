@@ -6,7 +6,7 @@ import { MensagemErro } from '@/componentes/mensagem-erro'
 import { entrar } from '@/modulos/auth/acoes'
 
 const CONTROLE =
-  'w-full rounded-md border border-borda-forte bg-superficie px-3 py-2 text-sm'
+  'w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors'
 
 export function FormularioLogin() {
   const [resultado, acao, pendente] = useActionState(entrar, null)
@@ -15,7 +15,7 @@ export function FormularioLogin() {
     <form action={acao} className="flex w-full flex-col gap-5">
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+          <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
             E-mail
           </span>
           <input
@@ -28,7 +28,7 @@ export function FormularioLogin() {
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+          <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
             Senha
           </span>
           <input

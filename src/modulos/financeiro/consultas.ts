@@ -2,8 +2,10 @@ import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   clientes,
+  compras,
   compraItens,
   despesas,
+  fornecedores,
   ordensServico,
   osItens,
   pagamentos,
@@ -216,3 +218,152 @@ export async function resultadoDoPeriodo(
     resultadoCentavos: entradasCentavos - saidasCentavos,
   }
 }
+
+export type LinhaPagamentoPeriodo = {
+  id: string
+  osId: string
+  osNumero: string
+  clienteNome: string
+  valorCentavos: number
+  forma: string
+  data: string
+  observacao: string | null
+  criadoEm: Date
+}
+
+export async function listarPagamentosDoPeriodo(
+  periodo: { de?: string; ate?: string } = {},
+): Promise<LinhaPagamentoPeriodo[]> {
+  const condicoes = []
+  if (periodo.de) condicoes.push(gte(pagamentos.data, periodo.de))
+  if (periodo.ate) condicoes.push(lte(pagamentos.data, periodo.ate))
+
+  const linhas = await db
+    .select({
+      id: pagamentos.id,
+      osId: pagamentos.osId,
+      osNumero: ordensServico.numero,
+      clienteNome: clientes.nome,
+      valorCentavos: pagamentos.valorCentavos,
+      forma: pagamentos.forma,
+      data: pagamentos.data,
+      observacao: pagamentos.observacao,
+      criadoEm: pagamentos.criadoEm,
+    })
+    .from(pagamentos)
+    .innerJoin(ordensServico, eq(ordensServico.id, pagamentos.osId))
+    .innerJoin(clientes, eq(clientes.id, ordensServico.clienteId))
+    .where(condicoes.length ? and(...condicoes) : undefined)
+    .orderBy(desc(pagamentos.data), desc(pagamentos.criadoEm))
+
+  return linhas
+}
+
+export type LinhaCompraPeriodo = {
+  id: string
+  data: string
+  totalCentavos: number
+  fornecedorNome: string | null
+  numeroDocumento: string | null
+}
+
+export async function listarComprasDoPeriodo(
+  periodo: { de?: string; ate?: string } = {},
+): Promise<LinhaCompraPeriodo[]> {
+  const condicoes = []
+  if (periodo.de) condicoes.push(gte(compras.data, periodo.de))
+  if (periodo.ate) condicoes.push(lte(compras.data, periodo.ate))
+
+  const linhas = await db
+    .select({
+      id: compras.id,
+      data: compras.data,
+      numeroDocumento: compras.numeroDocumento,
+      fornecedorNome: fornecedores.nome,
+      total: sql<string>`coalesce((
+        select sum(ci.quantidade * ci.custo_unitario_centavos)
+        from compra_itens ci where ci.compra_id = compras.id
+      ), 0)`,
+    })
+    .from(compras)
+    .leftJoin(fornecedores, eq(fornecedores.id, compras.fornecedorId))
+    .where(condicoes.length ? and(...condicoes) : undefined)
+    .orderBy(desc(compras.data), desc(compras.criadoEm))
+
+  return linhas.map((linha) => ({
+    id: linha.id,
+    data: linha.data,
+    numeroDocumento: linha.numeroDocumento,
+    fornecedorNome: linha.fornecedorNome,
+    totalCentavos: Math.round(Number(linha.total)),
+  }))
+}
+
+export type ItemFluxoCaixa = {
+  id: string
+  tipo: 'entrada' | 'saida'
+  origem: 'pagamento' | 'despesa' | 'compra'
+  data: string
+  categoria: string
+  descricao: string
+  detalhe?: string
+  valorCentavos: number
+  link?: string
+  removivel?: boolean
+}
+
+export async function listarFluxoDeCaixa(
+  periodo: { de?: string; ate?: string } = {},
+): Promise<ItemFluxoCaixa[]> {
+  const [pagamentosLista, despesasLista, comprasLista] = await Promise.all([
+    listarPagamentosDoPeriodo(periodo),
+    listarDespesas(periodo),
+    listarComprasDoPeriodo(periodo),
+  ])
+
+  const itens: ItemFluxoCaixa[] = []
+
+  for (const pag of pagamentosLista) {
+    itens.push({
+      id: pag.id,
+      tipo: 'entrada',
+      origem: 'pagamento',
+      data: pag.data,
+      categoria: 'Recebimento de OS',
+      descricao: `OS ${pag.osNumero} · ${pag.clienteNome}`,
+      detalhe: pag.forma ? pag.forma.replace('_', ' ').toUpperCase() : undefined,
+      valorCentavos: pag.valorCentavos,
+      link: `/ordens-servico/${pag.osId}?aba=pagamentos`,
+    })
+  }
+
+  for (const desp of despesasLista) {
+    itens.push({
+      id: desp.id,
+      tipo: 'saida',
+      origem: 'despesa',
+      data: desp.data,
+      categoria: desp.categoria,
+      descricao: desp.descricao ? desp.descricao : 'Despesa operacional',
+      valorCentavos: desp.valorCentavos,
+      removivel: true,
+    })
+  }
+
+  for (const comp of comprasLista) {
+    itens.push({
+      id: comp.id,
+      tipo: 'saida',
+      origem: 'compra',
+      data: comp.data,
+      categoria: 'Compra de peças',
+      descricao: comp.fornecedorNome ? `Fornecedor: ${comp.fornecedorNome}` : 'Compra de peças p/ estoque',
+      detalhe: comp.numeroDocumento ? `Doc: ${comp.numeroDocumento}` : undefined,
+      valorCentavos: comp.totalCentavos,
+      link: `/compras`,
+    })
+  }
+
+  return itens.sort((a, b) => b.data.localeCompare(a.data))
+}
+

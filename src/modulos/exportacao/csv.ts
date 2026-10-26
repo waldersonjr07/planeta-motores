@@ -6,15 +6,24 @@
 
 import { formatarDataHoraIso } from '@/lib/datas'
 
+const CARACTERES_FORMULA = /^[=+\-@\t\r]/
+
 function escapar(valor: unknown): string {
   if (valor === null || valor === undefined) return ''
 
-  const texto =
+  let texto =
     valor instanceof Date
       ? formatarDataHoraIso(valor)
       : typeof valor === 'object'
         ? JSON.stringify(valor)
         : String(valor)
+
+  // Proteção contra Formula / CSV Injection no Excel e Google Sheets:
+  // Se o campo começar com '=', '+', '-', '@', '\t' ou '\r' e não for um número válido,
+  // prefixamos com apóstrofo (') para forçar a planilha a tratar como texto literal.
+  if (CARACTERES_FORMULA.test(texto) && !/^-?\d+(\.\d+)?$/.test(texto.trim())) {
+    texto = `'${texto}`
+  }
 
   // Aspas, vírgula e quebra de linha obrigam o campo a ir entre aspas, com as
   // aspas internas duplicadas.

@@ -13,8 +13,15 @@ import { formatarQuantidade } from '@/lib/quantidade'
  * pela rede em vez de ler o arquivo local — falha calada, sem emblema no PDF
  * e sem erro no `renderToBuffer`. Um Buffer pula esse caminho inteiro.
  */
-const CAMINHO_EMBLEMA = path.join(process.cwd(), 'public', 'logo-planeta-motores.jpeg')
-const EMBLEMA = fs.readFileSync(CAMINHO_EMBLEMA)
+let EMBLEMA: Buffer | null = null
+try {
+  const CAMINHO_EMBLEMA = path.join(process.cwd(), 'public', 'logo-planeta-motores.jpeg')
+  if (fs.existsSync(CAMINHO_EMBLEMA)) {
+    EMBLEMA = fs.readFileSync(CAMINHO_EMBLEMA)
+  }
+} catch {
+  EMBLEMA = null
+}
 
 /*
  * Cores tiradas de src/app/globals.css, para papel e tela combinarem. O
@@ -177,7 +184,7 @@ export function Cabecalho({ empresa }: { empresa: DadosEmpresa }) {
         O emblema no papel que o cliente leva embora. Recortado em círculo,
         como na tela — o arquivo é quadrado com o campo marinho embutido.
       */}
-      <Image src={EMBLEMA} style={estilos.emblema} />
+      {EMBLEMA ? <Image src={EMBLEMA} style={estilos.emblema} /> : null}
       <Text style={estilos.empresa}>{empresa.empresaNome.toUpperCase()}</Text>
       <Text style={estilos.lema}>Atendimento Especializado</Text>
       {contato ? <Text style={estilos.contato}>{contato}</Text> : null}

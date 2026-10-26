@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server'
 import { usuarioAtual } from '@/modulos/auth/guarda'
+import { verificarLimiteDeRotas } from '@/modulos/auth/limitador-rotas'
 import { TIPOS, gerarDocumento, type TipoDocumento } from '@/modulos/documentos/pdf'
 
 export async function GET(
   _requisicao: Request,
   { params }: { params: Promise<{ tipo: string; osId: string }> },
 ) {
-  if (!(await usuarioAtual())) {
+  const usuario = await usuarioAtual()
+  if (!usuario) {
     return new NextResponse('Não autorizado', { status: 401 })
+  }
+
+  // Prevenção contra DoS: limite de 20 PDFs por minuto por usuário
+  if (!verificarLimiteDeRotas(`pdf:${usuario.id}`, 20, 60_000)) {
+    return new NextResponse('Muitas requisições. Aguarde um minuto antes de gerar novos documentos.', {
+      status: 429,
+      headers: { 'Retry-After': '60' },
+    })
   }
 
   const { tipo, osId } = await params

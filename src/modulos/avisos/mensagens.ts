@@ -26,7 +26,13 @@ export function preencherModelo(modelo: string, valores: ValoresDaMensagem): str
 /** Monta o link do WhatsApp com número e texto já preenchidos. */
 export function linkDoWhatsapp(telefone: string, mensagem: string): string {
   const digitos = telefone.replace(/\D/g, '')
-  // Número brasileiro sem DDI recebe o 55; com DDI, não duplica.
-  const comDdi = digitos.startsWith('55') ? digitos : `55${digitos}`
+  // Número brasileiro tem 10 (fixo) ou 11 dígitos (celular) com DDD.
+  // Se tiver 11 dígitos ou menos, sempre recebe o DDI 55 (evitando que DDD 55 seja tratado como DDI).
+  const comDdi =
+    digitos.length <= 11
+      ? `55${digitos}`
+      : digitos.startsWith('55')
+        ? digitos
+        : `55${digitos}`
   return `https://wa.me/${comDdi}?text=${encodeURIComponent(mensagem)}`
 }

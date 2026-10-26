@@ -9,7 +9,7 @@ export function Voltar({ href, texto }: { href: string; texto: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-sm text-tinta-suave hover:text-acao hover:underline"
+      className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600 hover:underline transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
     >
       <span aria-hidden="true">←</span> {texto}
     </Link>

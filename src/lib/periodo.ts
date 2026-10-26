@@ -43,3 +43,25 @@ export function rotuloDoMes(periodo: Periodo): string {
   )
   return `${nome} de ${ano}`
 }
+
+/** Retorna o mês anterior no formato AAAA-MM. */
+export function mesAnterior(referencia = hoje()): string {
+  const [ano, mes] = referencia.split('-').map(Number)
+  const anoNovo = mes === 1 ? ano - 1 : ano
+  const mesNovo = mes === 1 ? 12 : mes - 1
+  return `${anoNovo}-${String(mesNovo).padStart(2, '0')}`
+}
+
+/** Retorna o mês seguinte no formato AAAA-MM. */
+export function mesSeguinte(referencia = hoje()): string {
+  const [ano, mes] = referencia.split('-').map(Number)
+  const anoNovo = mes === 12 ? ano + 1 : ano
+  const mesNovo = mes === 12 ? 1 : mes + 1
+  return `${anoNovo}-${String(mesNovo).padStart(2, '0')}`
+}
+
+/** Retorna o mês atual corrente no formato AAAA-MM. */
+export function mesAtualIso(): string {
+  return hoje().slice(0, 7)
+}
+

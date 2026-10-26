@@ -93,10 +93,10 @@ export default async function PaginaOrdensServico({
           >
             {lista.map((os) => (
               <Linha key={os.id}>
-                <Celula forte>
+                <Celula forte mono>
                   <Link
                     href={`/ordens-servico/${os.id}`}
-                    className="text-acao hover:underline"
+                    className="text-blue-400 hover:text-blue-300 hover:underline"
                   >
                     {os.numero}
                   </Link>
@@ -108,7 +108,7 @@ export default async function PaginaOrdensServico({
                     {SITUACOES[os.situacao]}
                   </Etiqueta>
                 </Celula>
-                <Celula tom="suave">{formatarData(os.recebidoEm)}</Celula>
+                <Celula tom="suave" mono>{formatarData(os.recebidoEm)}</Celula>
                 <Celula numerica forte={os.totalCentavos > 0}>
                   {os.totalCentavos > 0 ? formatarReais(os.totalCentavos) : '—'}
                 </Celula>

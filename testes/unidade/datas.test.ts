@@ -1,9 +1,11 @@
 import { expect, test } from 'vitest'
 import {
   diasDesde,
+  fimDoDia,
   formatarData,
   formatarDataHora,
   formatarDataHoraIso,
+  inicioDoDia,
 } from '../../src/lib/datas'
 
 test('formata em ISO com o deslocamento de Cáceres', () => {
@@ -67,4 +69,22 @@ test('OS concluída às 23h30 conta no dia dela, não no seguinte', () => {
   expect(formatarData(concluida)).toBe('17/08/2026')
   // Na manhã do dia 18, essa OS tem um dia — não dois, nem zero.
   expect(diasDesde(concluida, new Date('2026-08-18T14:00:00Z'))).toBe(1)
+})
+
+test('inicioDoDia e fimDoDia respeitam o fuso horário de Cáceres (UTC-4)', () => {
+  const inicio = inicioDoDia('2026-10-26')
+  const fim = fimDoDia('2026-10-26')
+
+  // 00:00:00 em Cáceres (UTC-4) equivale a 04:00:00 UTC
+  expect(inicio.toISOString()).toBe('2026-10-26T04:00:00.000Z')
+  // 23:59:59.999 em Cáceres (UTC-4) equivale a 03:59:59.999 UTC do dia seguinte
+  expect(fim.toISOString()).toBe('2026-10-27T03:59:59.999Z')
+
+  // Evento às 21h do dia 25/10 (01:00 UTC do dia 26/10) fica FORA do dia 26
+  const noiteDoDiaAnterior = new Date('2026-10-26T01:00:00Z')
+  expect(noiteDoDiaAnterior >= inicio).toBe(false)
+
+  // Evento às 08h do dia 26/10 (12:00 UTC do dia 26/10) fica DENTRO do dia 26
+  const manhaDoDia = new Date('2026-10-26T12:00:00Z')
+  expect(manhaDoDia >= inicio && manhaDoDia <= fim).toBe(true)
 })

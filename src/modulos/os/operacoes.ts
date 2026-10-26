@@ -1,4 +1,5 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '@/db'
 import {
   clientes,
@@ -9,9 +10,11 @@ import {
   osItens,
   osNumeracao,
   osOrcamentoVersoes,
+  pagamentos,
   pecas,
   servicos,
 } from '@/db/schema'
+import { formatarReais } from '@/lib/dinheiro'
 import { anoCorrente } from '@/lib/periodo'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
 import { criarClienteComEquipamento } from '@/modulos/clientes/operacoes'
@@ -26,6 +29,14 @@ import {
 import { calcularTotais } from './totais'
 
 const OS_ENCERRADA = 'Esta ordem de serviço está encerrada e não aceita alteração de itens.'
+const OS_PRONTA =
+  "Esta ordem de serviço está com status 'Pronto'. Retorne para 'Em execução' para alterar os itens."
+
+function validarPermissaoAlteracaoItem(situacao: SituacaoOs): Resultado<null> {
+  if (situacao === 'pronto') return falha(OS_PRONTA)
+  if (!aceitaAlteracaoDeItem(situacao)) return falha(OS_ENCERRADA)
+  return sucesso(null)
+}
 
 // ---------------------------------------------------------------- criação
 
@@ -130,7 +141,8 @@ export async function adicionarItem(
 ): Promise<Resultado<{ id: string }>> {
   const situacao = await situacaoDaOs(osId)
   if (!situacao) return falha('Ordem de serviço não encontrada.')
-  if (!aceitaAlteracaoDeItem(situacao)) return falha(OS_ENCERRADA)
+  const permissao = validarPermissaoAlteracaoItem(situacao)
+  if (!permissao.ok) return permissao
   if (!(entrada.quantidade > 0)) {
     return falha('A quantidade precisa ser maior que zero.')
   }
@@ -189,6 +201,8 @@ export async function adicionarItem(
 }
 
 export async function removerItem(itemId: string): Promise<Resultado<null>> {
+  if (!z.string().uuid().safeParse(itemId).success) return falha('Item não encontrado.')
+
   const [item] = await db
     .select({ osId: osItens.osId })
     .from(osItens)
@@ -197,7 +211,40 @@ export async function removerItem(itemId: string): Promise<Resultado<null>> {
   if (!item) return falha('Item não encontrado.')
 
   const situacao = await situacaoDaOs(item.osId)
-  if (situacao && !aceitaAlteracaoDeItem(situacao)) return falha(OS_ENCERRADA)
+  if (!situacao) return falha('Ordem de serviço não encontrada.')
+  const permissao = validarPermissaoAlteracaoItem(situacao)
+  if (!permissao.ok) return permissao
+
+  const [os] = await db
+    .select({ descontoCentavos: ordensServico.descontoCentavos })
+    .from(ordensServico)
+    .where(eq(ordensServico.id, item.osId))
+    .limit(1)
+
+  const outrosItens = await db
+    .select({
+      tipo: osItens.tipo,
+      quantidade: osItens.quantidade,
+      precoUnitarioCentavos: osItens.precoUnitarioCentavos,
+    })
+    .from(osItens)
+    .where(and(eq(osItens.osId, item.osId), sql`${osItens.id} != ${itemId}`))
+
+  const novosTotais = calcularTotais(outrosItens, os?.descontoCentavos ?? 0)
+
+  const [pagoResult] = await db
+    .select({
+      pago: sql<string>`coalesce(sum(${pagamentos.valorCentavos}), 0)`,
+    })
+    .from(pagamentos)
+    .where(eq(pagamentos.osId, item.osId))
+
+  const pagoCentavos = Math.round(Number(pagoResult?.pago ?? 0))
+  if (pagoCentavos > 0 && novosTotais.totalCentavos < pagoCentavos) {
+    return falha(
+      `Não é possível remover este item porque o total da OS (${formatarReais(novosTotais.totalCentavos)}) ficaria menor do que o valor já pago (${formatarReais(pagoCentavos)}).`,
+    )
+  }
 
   await db.delete(osItens).where(eq(osItens.id, itemId))
   return sucesso(null)
@@ -213,7 +260,36 @@ export async function definirDesconto(
 
   const situacao = await situacaoDaOs(osId)
   if (!situacao) return falha('Ordem de serviço não encontrada.')
-  if (!aceitaAlteracaoDeItem(situacao)) return falha(OS_ENCERRADA)
+  const permissao = validarPermissaoAlteracaoItem(situacao)
+  if (!permissao.ok) return permissao
+
+  const itens = await db
+    .select({
+      tipo: osItens.tipo,
+      quantidade: osItens.quantidade,
+      precoUnitarioCentavos: osItens.precoUnitarioCentavos,
+    })
+    .from(osItens)
+    .where(eq(osItens.osId, osId))
+
+  const totais = calcularTotais(itens, descontoCentavos)
+  if (descontoCentavos > totais.subtotalCentavos) {
+    return falha('O desconto não pode ser maior do que o subtotal da OS.')
+  }
+
+  const [pagoResult] = await db
+    .select({
+      pago: sql<string>`coalesce(sum(${pagamentos.valorCentavos}), 0)`,
+    })
+    .from(pagamentos)
+    .where(eq(pagamentos.osId, osId))
+
+  const pagoCentavos = Math.round(Number(pagoResult?.pago ?? 0))
+  if (pagoCentavos > 0 && totais.totalCentavos < pagoCentavos) {
+    return falha(
+      `O desconto deixaria o total da OS (${formatarReais(totais.totalCentavos)}) menor do que o valor já pago (${formatarReais(pagoCentavos)}).`,
+    )
+  }
 
   await db
     .update(ordensServico)

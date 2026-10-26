@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 import { parsearReais } from '@/lib/dinheiro'
 import { parsearQuantidade } from '@/lib/quantidade'
 import { falha, falhaDeValidacao, type Resultado } from '@/lib/resultado'
@@ -119,7 +120,11 @@ export async function acaoAdicionarItem(
 export async function acaoRemoverItem(formulario: FormData): Promise<void> {
   await exigirUsuario()
 
-  await removerItem(String(formulario.get('itemId') ?? ''))
+  const idBruto = String(formulario.get('itemId') ?? '')
+  const validacao = z.string().uuid().safeParse(idBruto)
+  if (!validacao.success) return
+
+  await removerItem(validacao.data)
   revalidarOs(String(formulario.get('osId') ?? ''))
 }
 
@@ -157,7 +162,13 @@ export async function acaoEnviarFoto(
 ): Promise<Resultado<{ id: string }>> {
   await exigirUsuario()
 
-  const osId = String(formulario.get('osId') ?? '')
+  const osIdRaw = String(formulario.get('osId') ?? '')
+  const validacaoOsId = z.string().uuid().safeParse(osIdRaw)
+  if (!validacaoOsId.success) {
+    return falha('Identificador de ordem de serviço inválido.')
+  }
+  const osId = validacaoOsId.data
+
   const arquivo = formulario.get('arquivo')
   if (!(arquivo instanceof File)) return falha('Selecione uma foto.')
 

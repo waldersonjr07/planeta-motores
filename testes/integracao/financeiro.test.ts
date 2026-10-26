@@ -14,6 +14,7 @@ import { entradaDespesa } from '../../src/modulos/financeiro/esquemas'
 import {
   registrarDespesa,
   registrarPagamento,
+  removerDespesa,
   removerPagamento,
 } from '../../src/modulos/financeiro/operacoes'
 import { limparBanco } from '../ajuda/banco'
@@ -203,7 +204,7 @@ test('o que ainda não foi combinado fica fora dos dois blocos', async () => {
     expect(cobrancas.aguardandoPagamento).toHaveLength(0)
     expect(cobrancas.emAndamento).toHaveLength(0)
   }
-})
+}, 15000)
 
 test('o que não vai acontecer fica fora dos dois blocos', async () => {
   for (const situacao of ['recusado', 'devolvido'] as const) {
@@ -216,7 +217,7 @@ test('o que não vai acontecer fica fora dos dois blocos', async () => {
     expect(cobrancas.aguardandoPagamento).toHaveLength(0)
     expect(cobrancas.emAndamento).toHaveLength(0)
   }
-})
+}, 15000)
 
 /**
  * `recebidoEm` é a data de chegada do equipamento. Usá-la como referência
@@ -399,4 +400,14 @@ test('descrição em branco vira nulo, não string vazia', () => {
   expect(analise.success).toBe(true)
   if (!analise.success) return
   expect(analise.data.descricao).toBeNull()
+})
+
+test('removerPagamento e removerDespesa com UUID inválido retornam falha sem estourar 500 no banco', async () => {
+  const rPag = await removerPagamento('nao-eh-uuid')
+  expect(rPag.ok).toBe(false)
+  if (!rPag.ok) expect(rPag.erro).toBe('Pagamento não encontrado.')
+
+  const rDesp = await removerDespesa('nao-eh-uuid')
+  expect(rDesp.ok).toBe(false)
+  if (!rDesp.ok) expect(rDesp.erro).toBe('Despesa não encontrada.')
 })

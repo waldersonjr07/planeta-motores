@@ -45,3 +45,7 @@ export const CATEGORIAS_DESPESA = {
   combustivel: 'Combustível',
   outros: 'Outros',
 } as const
+
+export type CategoriaDespesa = keyof typeof CATEGORIAS_DESPESA
+export type FormaPagamento = keyof typeof FORMAS_PAGAMENTO
+

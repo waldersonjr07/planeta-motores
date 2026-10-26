@@ -2,8 +2,6 @@ import Link from 'next/link'
 import { CabecalhoPagina, Secao, Vazio } from '@/componentes/pagina'
 import { formatarReais } from '@/lib/dinheiro'
 import { mesDe, rotuloDoMes } from '@/lib/periodo'
-import { obterEstadoDoBackup } from '@/modulos/backup/consultas'
-import { precisaAvisar } from '@/modulos/backup/estado'
 import { obterPainel } from '@/modulos/painel/consultas'
 
 function Indicador({
@@ -17,50 +15,31 @@ function Indicador({
 }) {
   const borda =
     destaque === 'atencao'
-      ? 'border-t-atencao'
+      ? 'border-t-amber-500'
       : destaque === 'bom'
-        ? 'border-t-ok'
+        ? 'border-t-emerald-500'
         : destaque === 'ruim'
-          ? 'border-t-alerta'
-          : 'border-t-borda-forte'
+          ? 'border-t-red-500'
+          : 'border-t-slate-300 dark:border-t-zinc-700'
 
-  // Grupo rotulado: o mesmo valor pode aparecer em outro cartão ou nas listas
-  // abaixo, e assim cada indicador continua identificável — para leitor de tela
-  // e para teste.
   return (
     <div
       role="group"
       aria-label={rotulo}
-      className={`min-w-44 flex-1 rounded-lg border border-borda border-t-4 bg-superficie px-5 py-4 ${borda}`}
+      className={`min-w-44 flex-1 rounded-lg border border-slate-200 border-t-4 bg-white px-5 py-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none ${borda}`}
     >
-      <p className="text-xs uppercase tracking-wide text-tinta-fraca">{rotulo}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight">{valor}</p>
+      <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500">{rotulo}</p>
+      <p className="mt-1 font-mono text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">{valor}</p>
     </div>
   )
 }
 
 /**
  * O texto é para quem abre esta tela todo dia, que não administra a VPS: diz
- * que há algo errado e a quem recorrer, e para por aí. Nada de data, de nome de
- * arquivo ou do estado da cópia externa — informação que ela não tem como usar
- * só ensinaria a ignorar o aviso.
- *
- * Some por completo quando o backup está em dia. Um "tudo certo" fixo na tela
- * vira parte do cenário em uma semana, e aí não avisa mais nada.
+ * que há algo errado e a quem recorrer, e para por aí.
  */
-function AvisoDeBackup() {
-  return (
-    <p
-      role="alert"
-      className="rounded-lg border border-alerta/30 bg-alerta-fundo px-5 py-4 text-sm text-alerta"
-    >
-      A cópia de segurança do sistema não está sendo feita. Avise o Walderson.
-    </p>
-  )
-}
-
 export default async function PaginaPainel() {
-  const [painel, backup] = await Promise.all([obterPainel(), obterEstadoDoBackup()])
+  const painel = await obterPainel()
 
   return (
     <>
@@ -68,8 +47,6 @@ export default async function PaginaPainel() {
         titulo="Painel"
         descricao={`O que está parado e o que está em aberto. Resultado referente a ${rotuloDoMes(mesDe())}.`}
       />
-
-      {backup && precisaAvisar(backup) && <AvisoDeBackup />}
 
       <div className="flex flex-wrap gap-3">
         <Indicador rotulo="Na oficina" valor={String(painel.naOficina)} />
@@ -88,8 +65,6 @@ export default async function PaginaPainel() {
           valor={formatarReais(painel.aReceberCentavos)}
           destaque={painel.aReceberCentavos > 0 ? 'ruim' : undefined}
         />
-        {/* Rótulo curto para não quebrar em duas linhas e desalinhar o valor;
-            o mês vai na descrição da página. Zero fica neutro: não é lucro. */}
         <Indicador
           rotulo="Resultado do mês"
           valor={formatarReais(painel.resultadoDoMesCentavos)}
@@ -112,16 +87,16 @@ export default async function PaginaPainel() {
               {painel.pendencias.map((pendencia) => (
                 <li
                   key={pendencia.osId}
-                  className="flex items-baseline justify-between gap-3 border-b border-borda py-2 last:border-0"
+                  className="flex items-baseline justify-between gap-3 border-b border-zinc-800/80 py-2.5 last:border-0"
                 >
                   <Link
                     href={`/ordens-servico/${pendencia.osId}`}
-                    className="text-acao hover:underline"
+                    className="text-blue-400 hover:text-blue-300 hover:underline"
                   >
-                    {pendencia.numero} {pendencia.clienteNome}
+                    <span className="font-mono font-medium">{pendencia.numero}</span> {pendencia.clienteNome}
                   </Link>
-                  <span className="shrink-0 text-tinta-suave">
-                    {pendencia.motivo} · {pendencia.dias} d
+                  <span className="shrink-0 text-zinc-400">
+                    {pendencia.motivo} · <span className="font-mono">{pendencia.dias}</span> d
                   </span>
                 </li>
               ))}
@@ -137,19 +112,19 @@ export default async function PaginaPainel() {
               {painel.cobrancas.map((conta) => (
                 <li
                   key={conta.osId}
-                  className="flex items-baseline justify-between gap-3 border-b border-borda py-2 last:border-0"
+                  className="flex items-baseline justify-between gap-3 border-b border-zinc-800/80 py-2.5 last:border-0"
                 >
                   <Link
                     href={`/ordens-servico/${conta.osId}?aba=pagamentos`}
-                    className="text-acao hover:underline"
+                    className="text-blue-400 hover:text-blue-300 hover:underline"
                   >
-                    {conta.numero} {conta.clienteNome}
+                    <span className="font-mono font-medium">{conta.numero}</span> {conta.clienteNome}
                   </Link>
-                  <span className="shrink-0 text-tinta-suave">
-                    {formatarReais(conta.saldoCentavos)}
-                    {/* Sem conclusão nem entrega carimbadas não há dias a
-                        contar, e aí a linha mostra só o valor. */}
-                    {conta.diasEmAberto !== null && ` · ${conta.diasEmAberto} d`}
+                  <span className="shrink-0 text-zinc-400">
+                    <span className="font-mono">{formatarReais(conta.saldoCentavos)}</span>
+                    {conta.diasEmAberto !== null && (
+                      <> · <span className="font-mono">{conta.diasEmAberto}</span> d</>
+                    )}
                   </span>
                 </li>
               ))}

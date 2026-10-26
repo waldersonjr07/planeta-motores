@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '@/db'
 import { despesas, pagamentos } from '@/db/schema'
 import { formatarReais } from '@/lib/dinheiro'
@@ -32,6 +33,8 @@ export async function registrarPagamento(
 }
 
 export async function removerPagamento(id: string): Promise<Resultado<null>> {
+  if (!z.string().uuid().safeParse(id).success) return falha('Pagamento não encontrado.')
+
   const removidos = await db
     .delete(pagamentos)
     .where(eq(pagamentos.id, id))
@@ -53,6 +56,8 @@ export async function registrarDespesa(
 }
 
 export async function removerDespesa(id: string): Promise<Resultado<null>> {
+  if (!z.string().uuid().safeParse(id).success) return falha('Despesa não encontrada.')
+
   const removidas = await db
     .delete(despesas)
     .where(eq(despesas.id, id))

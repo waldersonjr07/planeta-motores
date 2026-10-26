@@ -72,10 +72,14 @@ test('relógio adiantado não vira aviso', () => {
   )
 })
 
-test('o estado da cópia externa não muda o aviso da tela', () => {
-  // A Lucilene não tem o que fazer com "o B2 ainda não está configurado", e ver
-  // isso todo dia ensinaria a ignorar a linha que um dia vai importar. O estado
-  // da cópia externa fica no log e no próprio arquivo, para quem administra.
+test('falha ou omissão na cópia externa vira aviso', () => {
   const pulada = '2026-08-17T03:00:12-04:00  cópia externa: PULADA (rclone não instalado)\n'
-  expect(interpretarMarcador(pulada, AGORA).situacao).toBe('em-dia')
+  const estadoPulada = interpretarMarcador(pulada, AGORA)
+  expect(estadoPulada.situacao).toBe('falha-externa')
+  expect(precisaAvisar(estadoPulada)).toBe(true)
+
+  const falhou = '2026-08-17T03:00:12-04:00  cópia externa: FALHOU (erro ao transferir)\n'
+  const estadoFalhou = interpretarMarcador(falhou, AGORA)
+  expect(estadoFalhou.situacao).toBe('falha-externa')
+  expect(precisaAvisar(estadoFalhou)).toBe(true)
 })

@@ -6,7 +6,7 @@ import type {
 } from 'react'
 
 const CONTROLE =
-  'w-full rounded-md border border-borda-forte bg-superficie px-3 py-2 text-sm placeholder:text-tinta-fraca'
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600'
 
 type Base = { rotulo: string; nome: string; erro?: string; className?: string }
 
@@ -23,11 +23,11 @@ function Envelope({
 }) {
   return (
     <label className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
-      <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+      <span className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-zinc-400">
         {rotulo}
       </span>
       {children}
-      {erro && <span className="text-xs text-alerta">{erro}</span>}
+      {erro && <span className="text-xs text-red-600 dark:text-red-400">{erro}</span>}
     </label>
   )
 }

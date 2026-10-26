@@ -66,10 +66,11 @@ test('cancelamento só antes da execução', () => {
   expect(transicaoPermitida('entregue', 'cancelado')).toBe(false)
 })
 
-test('OS encerrada não aceita alteração de item', () => {
+test('OS encerrada ou pronta não aceita alteração de item', () => {
   expect(aceitaAlteracaoDeItem('em_diagnostico')).toBe(true)
   expect(aceitaAlteracaoDeItem('em_execucao')).toBe(true)
   expect(aceitaAlteracaoDeItem('recusado')).toBe(true)
+  expect(aceitaAlteracaoDeItem('pronto')).toBe(false)
   expect(aceitaAlteracaoDeItem('entregue')).toBe(false)
   expect(aceitaAlteracaoDeItem('devolvido')).toBe(false)
   expect(aceitaAlteracaoDeItem('cancelado')).toBe(false)

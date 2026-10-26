@@ -4,11 +4,11 @@ import { useActionState } from 'react'
 import { Botao } from '@/componentes/botao'
 import { Campo, CampoSelecao, GradeFormulario } from '@/componentes/campo'
 import { MensagemErro } from '@/componentes/mensagem-erro'
-import { Dado, Vazio } from '@/componentes/pagina'
+import { Vazio } from '@/componentes/pagina'
 import { Celula, Linha, Tabela } from '@/componentes/tabela'
 import { formatarReais } from '@/lib/dinheiro'
 import { acaoRegistrarPagamento, acaoRemoverPagamento } from '@/modulos/financeiro/acoes'
-import { CONDICOES, type CondicaoCobranca } from '@/modulos/financeiro/cobranca'
+import { type CondicaoCobranca } from '@/modulos/financeiro/cobranca'
 import { FORMAS_PAGAMENTO } from '@/modulos/financeiro/esquemas'
 
 type Pagamento = {
@@ -39,20 +39,8 @@ export function AbaPagamentos({
 
   return (
     <div className="flex flex-col gap-6">
-      <dl className="flex flex-wrap gap-x-10 gap-y-3">
-        <Dado rotulo="Total do serviço">{formatarReais(resumo.totalCentavos)}</Dado>
-        <Dado rotulo="Pago">{formatarReais(resumo.pagoCentavos)}</Dado>
-        <Dado
-          rotulo="Saldo devedor"
-          tom={resumo.saldoCentavos > 0 ? 'alerta' : 'ok'}
-        >
-          {formatarReais(resumo.saldoCentavos)}
-        </Dado>
-        <Dado rotulo="Situação">{CONDICOES[resumo.condicao]}</Dado>
-      </dl>
-
       {pagamentos.length === 0 ? (
-        <Vazio>Nenhum pagamento lançado.</Vazio>
+        <Vazio>Nenhum pagamento registrado até o momento.</Vazio>
       ) : (
         <Tabela
           colunas={[
@@ -65,10 +53,10 @@ export function AbaPagamentos({
         >
           {pagamentos.map((pagamento) => (
             <Linha key={pagamento.id}>
-              <Celula>{pagamento.data.split('-').reverse().join('/')}</Celula>
+              <Celula mono tom="suave">{pagamento.data.split('-').reverse().join('/')}</Celula>
               <Celula>{FORMAS_PAGAMENTO[pagamento.forma]}</Celula>
               <Celula tom="suave">{pagamento.observacao ?? '—'}</Celula>
-              <Celula numerica forte>
+              <Celula numerica forte mono>
                 {formatarReais(pagamento.valorCentavos)}
               </Celula>
               <Celula numerica>

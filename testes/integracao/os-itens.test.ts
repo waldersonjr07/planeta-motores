@@ -10,6 +10,7 @@ import {
   mudarSituacao,
   removerItem,
 } from '../../src/modulos/os/operacoes'
+import { registrarPagamento } from '../../src/modulos/financeiro/operacoes'
 import { limparBanco } from '../ajuda/banco'
 import { cenarioOs } from '../ajuda/os'
 
@@ -263,4 +264,104 @@ test('desconto negativo é recusado', async () => {
   const { osId } = await cenarioOs()
 
   expect((await definirDesconto(osId, -100)).ok).toBe(false)
+})
+
+test('OS com status pronto não aceita adicionar item, remover item ou alterar desconto', async () => {
+  const { osId, servico } = await cenarioOs()
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 })
+  const os = await obterOs(osId)
+  const itemId = os!.itens[0].id
+
+  await db.update(ordensServico).set({ situacao: 'pronto' }).where(eq(ordensServico.id, osId))
+
+  const add = await adicionarItem(osId, {
+    tipo: 'servico',
+    descricao: 'Ajuste extra',
+    quantidade: 1,
+    precoUnitarioCentavos: 5000,
+  })
+  expect(add.ok).toBe(false)
+  if (!add.ok) expect(add.erro).toContain('Pronto')
+
+  const rem = await removerItem(itemId)
+  expect(rem.ok).toBe(false)
+  if (!rem.ok) expect(rem.erro).toContain('Pronto')
+
+  const desc = await definirDesconto(osId, 1000)
+  expect(desc.ok).toBe(false)
+  if (!desc.ok) expect(desc.erro).toContain('Pronto')
+})
+
+test('desconto maior do que o subtotal da OS é recusado', async () => {
+  const { osId, servico } = await cenarioOs()
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 }) // 21000
+
+  const r = await definirDesconto(osId, 25000)
+  expect(r.ok).toBe(false)
+  if (!r.ok) expect(r.erro).toContain('maior do que o subtotal')
+})
+
+test('desconto não pode deixar o total da OS menor do que os pagamentos já registrados', async () => {
+  const { osId, servico } = await cenarioOs()
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 }) // 21000
+
+  await registrarPagamento({
+    osId,
+    valorCentavos: 15000,
+    forma: 'pix',
+    data: '2026-07-30',
+    observacao: 'Sinal de entrada',
+  })
+
+  // Novo total seria 21000 - 10000 = 11000, menor que o pago de 15000
+  const r = await definirDesconto(osId, 10000)
+  expect(r.ok).toBe(false)
+  if (!r.ok) {
+    expect(r.erro).toContain('menor do que o valor já pago')
+  }
+
+  // Desconto de 5000 deixa total = 16000 >= 15000 -> permitido
+  const permitido = await definirDesconto(osId, 5000)
+  expect(permitido.ok).toBe(true)
+})
+
+test('remover item não pode deixar o total da OS menor do que os pagamentos já registrados', async () => {
+  const { osId, servico, peca } = await cenarioOs()
+  await adicionarItem(osId, { tipo: 'servico', referenciaId: servico.id, quantidade: 1 }) // 21000
+  await adicionarItem(osId, {
+    tipo: 'peca',
+    referenciaId: peca.id,
+    quantidade: 2,
+    precoUnitarioCentavos: 5000, // 10000
+  })
+  // Total: 31000
+  const os = await obterOs(osId)
+  const itemServico = os!.itens.find((i) => i.tipo === 'servico')!
+  const itemPeca = os!.itens.find((i) => i.tipo === 'peca')!
+
+  // Cliente pagou 20000
+  await registrarPagamento({
+    osId,
+    valorCentavos: 20000,
+    forma: 'pix',
+    data: '2026-07-30',
+    observacao: 'Sinal',
+  })
+
+  // Remover serviço (21000) deixaria total em 10000, menor que os 20000 já pagos
+  const r = await removerItem(itemServico.id)
+  expect(r.ok).toBe(false)
+  if (!r.ok) {
+    expect(r.erro).toContain('ficaria menor do que o valor já pago')
+  }
+
+  // Remover peça (10000) deixaria total em 21000, maior que 20000 -> permitido
+  const permitido = await removerItem(itemPeca.id)
+  expect(permitido.ok).toBe(true)
+})
+
+test('removerItem com UUID inválido retorna falha sem estourar 500 no banco', async () => {
+  const r = await removerItem('item-invalido-123')
+  expect(r.ok).toBe(false)
+  if (!r.ok) expect(r.erro).toBe('Item não encontrado.')
 })

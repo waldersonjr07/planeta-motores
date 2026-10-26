@@ -68,11 +68,11 @@ export function AbaOrcamento({
             <Linha key={item.id}>
               <Celula>{item.descricao}</Celula>
               <Celula tom="suave">{item.tipo === 'peca' ? 'Peça' : 'Serviço'}</Celula>
-              <Celula numerica>{formatarQuantidade(item.quantidade)}</Celula>
-              <Celula numerica tom="suave">
+              <Celula numerica mono>{formatarQuantidade(item.quantidade)}</Celula>
+              <Celula numerica tom="suave" mono>
                 {formatarReais(item.precoUnitarioCentavos)}
               </Celula>
-              <Celula numerica forte>
+              <Celula numerica forte mono>
                 {formatarReais(
                   Math.round(Number(item.quantidade) * item.precoUnitarioCentavos),
                 )}
@@ -92,27 +92,6 @@ export function AbaOrcamento({
           ))}
         </Tabela>
       )}
-
-      <div className="flex justify-end">
-        <dl className="w-72 text-sm">
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Peças</dt>
-            <dd>{formatarReais(totais.pecasCentavos)}</dd>
-          </div>
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Serviços</dt>
-            <dd>{formatarReais(totais.servicosCentavos)}</dd>
-          </div>
-          <div className="flex justify-between py-1">
-            <dt className="text-tinta-suave">Desconto</dt>
-            <dd>{formatarReais(totais.descontoCentavos)}</dd>
-          </div>
-          <div className="mt-1 flex justify-between border-t border-borda pt-2 text-base font-semibold">
-            <dt>Total</dt>
-            <dd>{formatarReais(totais.totalCentavos)}</dd>
-          </div>
-        </dl>
-      </div>
 
       {editavel && (
         <div className="flex flex-col gap-4 border-t border-borda pt-5">

@@ -3,7 +3,7 @@
 services:
   app:
     build: .
-    restart: unless-stopped
+    restart: always
     environment:
       DATABASE_URL: postgres://pm:${POSTGRES_PASSWORD}@postgres:5432/pm
       NODE_ENV: production
@@ -24,10 +24,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - rede-publica
+      - rede-interna
 
   postgres:
     image: postgres:17-alpine
-    restart: unless-stopped
+    restart: always
+    networks:
+      - rede-interna
     environment:
       POSTGRES_USER: pm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -51,7 +56,9 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    restart: unless-stopped
+    restart: always
+    networks:
+      - rede-publica
     ports:
       - '80:80'
       - '443:443'
@@ -63,6 +70,11 @@ services:
       - caddy-config:/config
     depends_on:
       - app
+
+networks:
+  rede-publica:
+  rede-interna:
+    internal: true
 
 volumes:
   pm-dados:

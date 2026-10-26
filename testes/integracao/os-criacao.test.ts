@@ -1,6 +1,7 @@
 import { beforeEach, expect, test } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { db } from '../../src/db'
-import { clientes, equipamentos, servicos } from '../../src/db/schema'
+import { clientes, equipamentos, ordensServico, servicos } from '../../src/db/schema'
 import { listarOs, obterOs } from '../../src/modulos/os/consultas'
 import { criarOs } from '../../src/modulos/os/operacoes'
 import { limparBanco } from '../ajuda/banco'
@@ -170,4 +171,33 @@ test('equipamento "outro" aparece com o texto digitado na lista e no detalhe da 
 
   expect(linha.equipamentoDescricao).toBe('Cortador de grama Husqvarna 236 (2T)')
   expect(os?.equipamento.descricao).toBe('Cortador de grama Husqvarna 236 (2T)')
+})
+
+test('o filtro de datas respeita o fuso de Cáceres (UTC-4) e não exibe OS do dia anterior', async () => {
+  const { cliente, equipamento } = await cenario()
+  const r1 = await criarOs({ clienteId: cliente.id, equipamentoId: equipamento.id, ...semTexto })
+  const r2 = await criarOs({ clienteId: cliente.id, equipamentoId: equipamento.id, ...semTexto })
+  if (!r1.ok || !r2.ok) throw new Error('criação falhou')
+
+  // OS 1 criada às 21h do dia 25/10 no horário local (01:00 UTC do dia 26/10)
+  await db
+    .update(ordensServico)
+    .set({ recebidoEm: new Date('2026-10-26T01:00:00Z') })
+    .where(eq(ordensServico.id, r1.dados.id))
+
+  // OS 2 criada às 10h do dia 26/10 no horário local (14:00 UTC do dia 26/10)
+  await db
+    .update(ordensServico)
+    .set({ recebidoEm: new Date('2026-10-26T14:00:00Z') })
+    .where(eq(ordensServico.id, r2.dados.id))
+
+  // Filtro de 2026-10-26 em diante deve conter APENAS a OS 2 (não a OS 1, que é do dia 25)
+  const listaDia26 = await listarOs({ de: '2026-10-26' })
+  expect(listaDia26.map((os) => os.id)).toContain(r2.dados.id)
+  expect(listaDia26.map((os) => os.id)).not.toContain(r1.dados.id)
+
+  // Filtro até 2026-10-25 deve conter a OS 1 e NÃO a OS 2
+  const listaDia25 = await listarOs({ ate: '2026-10-25' })
+  expect(listaDia25.map((os) => os.id)).toContain(r1.dados.id)
+  expect(listaDia25.map((os) => os.id)).not.toContain(r2.dados.id)
 })

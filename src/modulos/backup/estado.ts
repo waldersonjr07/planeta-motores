@@ -18,18 +18,15 @@ export const HORAS_ATE_AVISAR = 36
 export type EstadoDoBackup =
   | { situacao: 'em-dia'; feitoEm: Date }
   | { situacao: 'atrasado'; feitoEm: Date }
+  | { situacao: 'falha-externa'; feitoEm: Date; motivo?: string }
   | { situacao: 'sem-noticia' }
 
 /**
  * Exatamente o que o `date '+%Y-%m-%dT%H:%M:%S%:z'` do script escreve, com o
- * fuso obrigatório. A VPS pode estar em UTC e quem lê está em Cáceres; data
- * sem fuso seria interpretada como local e daria quatro horas de erro.
- *
- * O rigor é a intenção: qualquer coisa que não seja este formato é tratada
- * como "não sei", que avisa. Um `Date.parse` solto aceitaria `2026` como uma
- * data válida de primeiro de janeiro e calaria a tela.
+ * fuso obrigatório. Opcionalmente seguido de "cópia externa: <status>".
  */
-const CARIMBO = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:\d{2}|Z))/
+const CARIMBO =
+  /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:\d{2}|Z))(?:\s+cópia externa:\s*(.+))?/i
 
 export function interpretarMarcador(
   conteudo: string | null,
@@ -44,15 +41,20 @@ export function interpretarMarcador(
   if (Number.isNaN(feitoEm.getTime())) return { situacao: 'sem-noticia' }
 
   const horas = (agora.getTime() - feitoEm.getTime()) / 3_600_000
-  return horas > HORAS_ATE_AVISAR
-    ? { situacao: 'atrasado', feitoEm }
-    : { situacao: 'em-dia', feitoEm }
+  if (horas > HORAS_ATE_AVISAR) {
+    return { situacao: 'atrasado', feitoEm }
+  }
+
+  const copiaExterna = encontrado[2]?.trim()
+  if (copiaExterna && !copiaExterna.toLowerCase().startsWith('enviada')) {
+    return { situacao: 'falha-externa', feitoEm, motivo: copiaExterna }
+  }
+
+  return { situacao: 'em-dia', feitoEm }
 }
 
 /**
- * "Atrasado" e "sem notícia" viram o mesmo aviso na tela de propósito. Quem vê
- * o painel não administra a VPS, e a diferença entre "parou de rodar" e "não
- * consegui ler o carimbo" não muda o que ela tem a fazer.
+ * "Atrasado", "falha-externa" e "sem notícia" viram aviso na tela.
  */
 export function precisaAvisar(estado: EstadoDoBackup): boolean {
   return estado.situacao !== 'em-dia'

@@ -10,6 +10,7 @@ import {
   osOrcamentoVersoes,
   pecas,
 } from '@/db/schema'
+import { fimDoDia, inicioDoDia } from '@/lib/datas'
 import { descreverEquipamento } from '@/modulos/clientes/equipamentos-descricao'
 import type { SituacaoOs } from './situacoes'
 import { calcularTotais, type TotaisOs } from './totais'
@@ -63,12 +64,8 @@ export async function listarOs(
   if (filtro.situacoes?.length) {
     condicoes.push(inArray(ordensServico.situacao, filtro.situacoes))
   }
-  if (filtro.de) condicoes.push(gte(ordensServico.recebidoEm, new Date(filtro.de)))
-  if (filtro.ate) {
-    const fim = new Date(filtro.ate)
-    fim.setHours(23, 59, 59, 999)
-    condicoes.push(lte(ordensServico.recebidoEm, fim))
-  }
+  if (filtro.de) condicoes.push(gte(ordensServico.recebidoEm, inicioDoDia(filtro.de)))
+  if (filtro.ate) condicoes.push(lte(ordensServico.recebidoEm, fimDoDia(filtro.ate)))
 
   const busca = filtro.busca?.trim()
   if (busca) {

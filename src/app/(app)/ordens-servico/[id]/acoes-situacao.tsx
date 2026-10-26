@@ -82,14 +82,14 @@ export function AcoesSituacao({
       {aberto && (
         <form
           action={enviar}
-          className="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-borda-forte bg-superficie p-4 shadow-lg"
+          className="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-slate-300/50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/50"
         >
           <input type="hidden" name="osId" value={osId} />
 
-          <p className="text-xs uppercase tracking-wide text-tinta-fraca">Situação atual</p>
-          <p className="mb-4 mt-0.5 font-semibold">{SITUACOES[situacao]}</p>
+          <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500">Situação atual</p>
+          <p className="mb-4 mt-0.5 font-semibold text-slate-900 dark:text-zinc-100">{SITUACOES[situacao]}</p>
 
-          <p className="mb-2 text-xs uppercase tracking-wide text-tinta-fraca">Mudar para</p>
+          <p className="mb-2 text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500">Mudar para</p>
 
           <div className="flex flex-col gap-1.5">
             {opcoes.map((para) => {
@@ -107,17 +107,17 @@ export function AcoesSituacao({
                   value={confirma ? undefined : para}
                   disabled={pendente}
                   onClick={confirma ? () => setDestino(para) : undefined}
-                  className={`flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
+                  className={`flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors cursor-pointer disabled:opacity-50 ${
                     escolhido
-                      ? 'border-acao bg-acao-fundo'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium dark:border-blue-500 dark:bg-blue-600/20 dark:text-blue-300'
                       : recomendado
-                        ? 'border-acao text-acao-escura hover:bg-acao-fundo'
-                        : 'border-borda hover:bg-realce'
+                        ? 'border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-500/50 dark:text-blue-400 dark:hover:bg-blue-600/15'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800/60'
                   }`}
                 >
                   <span>{SITUACOES[para]}</span>
                   {recomendado && (
-                    <span className="text-xs text-acao">próximo passo</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">próximo passo</span>
                   )}
                 </button>
               )
@@ -125,22 +125,22 @@ export function AcoesSituacao({
           </div>
 
           <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-tinta-suave">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-zinc-400">
               Observação (opcional)
             </span>
             <input
               name="observacao"
               placeholder="Fica registrada no histórico"
-              className="rounded-md border border-borda-forte px-3 py-2 text-sm placeholder:text-tinta-fraca"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600"
             />
           </label>
 
           {confirmando && (
-            <div className="mt-4 flex flex-col gap-2 rounded-md border border-atencao-borda bg-atencao-fundo p-3">
+            <div className="mt-4 flex flex-col gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
               {/* O dinheiro já entrou: cancelar não devolve nada e não mexe no
                   resultado do mês em que foi recebido. */}
               {avisaPagamento && (
-                <p className="text-xs text-atencao">
+                <p className="text-xs text-amber-800 dark:text-amber-300">
                   Esta OS já recebeu {formatarReais(pagoCentavos)}. Cancelar não devolve
                   esse valor nem o tira do resultado do mês.
                 </p>
@@ -148,12 +148,12 @@ export function AcoesSituacao({
 
               {motivoPedido && (
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-atencao">{motivoPedido}</span>
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-300">{motivoPedido}</span>
                   <input
                     name="motivo"
                     required
                     aria-label={motivoPedido}
-                    className="rounded-md border border-atencao-borda bg-superficie px-3 py-2 text-sm"
+                    className="rounded-md border border-amber-400 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none dark:border-amber-500/40 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                 </label>
               )}

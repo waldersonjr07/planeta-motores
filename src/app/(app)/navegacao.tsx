@@ -40,10 +40,10 @@ export function Navegacao() {
     <nav aria-label="Seções do sistema" className="flex flex-col gap-6">
       {GRUPOS.map((grupo) => (
         <div key={grupo.titulo}>
-          <p className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-marca-texto/75">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
             {grupo.titulo}
           </p>
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col gap-1">
             {grupo.itens.map((item) => {
               // A raiz da seção marca também as telas filhas: estando na ficha
               // de uma OS, "Ordens de serviço" continua aceso; em qualquer aba
@@ -53,17 +53,13 @@ export function Navegacao() {
 
               return (
                 <li key={item.href}>
-                  {/*
-                    O teal é a única cor cromática do menu, e existe para dizer
-                    onde você está. Vem dos continentes do planeta no emblema.
-                  */}
                   <Link
                     href={item.href}
                     aria-current={ativo ? 'page' : undefined}
-                    className={`block rounded-md border-l-2 px-3 py-1.5 text-sm transition-colors ${
+                    className={`block rounded-r-md border-l-2 px-3 py-2 text-sm transition-colors ${
                       ativo
-                        ? 'border-planeta bg-marca-clara font-medium text-planeta'
-                        : 'border-transparent text-marca-texto hover:bg-marca-clara/60 hover:text-white'
+                        ? 'border-blue-600 bg-blue-50 font-semibold text-blue-700 dark:border-blue-500 dark:bg-blue-600/15 dark:text-blue-400'
+                        : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-200'
                     }`}
                   >
                     {item.texto}
