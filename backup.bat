@@ -23,10 +23,15 @@ set "USUARIO_DB=pm"
 :: ----------------------------------------------------------------------------
 :: 2. VALIDAÇÃO DA PASTA DE DESTINO
 :: ----------------------------------------------------------------------------
-:: Cria a pasta de destino caso ela ainda não exista
+:: Cria a pasta de destino caso ela ainda não exista, com fallback seguro
 if not exist "%CAMINHO_DRIVE%" (
     echo [INFO] Criando pasta de destino: "%CAMINHO_DRIVE%"
     mkdir "%CAMINHO_DRIVE%" 2>nul
+)
+if not exist "%CAMINHO_DRIVE%" (
+    echo [AVISO] Caminho "%CAMINHO_DRIVE%" inacessivel. Usando fallback em "%USERPROFILE%\backups\PlanetaMotores".
+    set "CAMINHO_DRIVE=%USERPROFILE%\backups\PlanetaMotores"
+    if not exist "!CAMINHO_DRIVE!" mkdir "!CAMINHO_DRIVE!" 2>nul
 )
 
 :: ----------------------------------------------------------------------------
@@ -47,7 +52,8 @@ echo [INFO] Iniciando backup diário: %NOME_ARQUIVO%
 :: 4. EXECUÇÃO DO BACKUP VIA DOCKER EXEC E PG_DUMP
 :: ----------------------------------------------------------------------------
 :: Executa o pg_dump dentro do container do Docker e redireciona a saída para o arquivo
-docker exec -t %NOME_CONTAINER% pg_dump -U %USUARIO_DB% %NOME_DB% > "%CAMINHO_DRIVE%\%NOME_ARQUIVO%"
+:: Nota: usa -i (ou sem TTY) em vez de -t para não corromper o dump com caracteres de controle/CRLF
+docker exec -i %NOME_CONTAINER% pg_dump -U %USUARIO_DB% %NOME_DB% > "%CAMINHO_DRIVE%\%NOME_ARQUIVO%"
 
 if %ERRORLEVEL% equ 0 (
     echo [SUCESSO] Backup salvo com sucesso em: "%CAMINHO_DRIVE%\%NOME_ARQUIVO%"

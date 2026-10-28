@@ -9,9 +9,8 @@ build/
 
 # Ambiente
 .env
-.env.test
-.env.local
-.env*.local
+.env.*
+!.env.example
 
 # Next.js
 next-env.d.ts

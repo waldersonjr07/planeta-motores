@@ -2,8 +2,8 @@ node_modules
 .next
 .git
 .env
-.env.test
-.env.local
+.env.*
+!.env.example
 uploads
 storage
 test-results

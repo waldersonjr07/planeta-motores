@@ -14,7 +14,7 @@ beforeEach(limparBanco)
 
 const base = {
   nome: 'Marcos Andrade',
-  tipoPessoa: 'fisica' as const,
+  tipoPessoa: 'fisica' as 'fisica' | 'juridica',
   documento: '',
   telefone: '',
   email: '',
