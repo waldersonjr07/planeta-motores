@@ -78,6 +78,13 @@ export async function registrarCompra(
       .returning({ id: compras.id })
 
     for (const item of resolvidos) {
+      if (
+        item.custoUnitarioCentavos > 2_147_483_647 ||
+        item.custoUnitarioCentavos < -2_147_483_648
+      ) {
+        throw new Error('Custo unitário excede o limite de inteiro.')
+      }
+
       await tx.insert(compraItens).values({
         compraId: compra.id,
         pecaId: item.pecaId,

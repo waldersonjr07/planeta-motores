@@ -22,5 +22,6 @@ export async function acaoSalvarConfiguracoes(
   if (!r.ok) return r
 
   revalidatePath('/configuracoes')
+  revalidatePath('/', 'layout')
   return { ok: true, dados: null }
 }

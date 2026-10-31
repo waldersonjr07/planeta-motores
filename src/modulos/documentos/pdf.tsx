@@ -1,5 +1,4 @@
 import { renderToBuffer } from '@react-pdf/renderer'
-import { formatarData } from '@/lib/datas'
 import { formatarReais } from '@/lib/dinheiro'
 import { valorPorExtenso } from '@/lib/extenso'
 import { mascararTelefone } from '@/lib/mascaras'
@@ -20,7 +19,6 @@ import {
   Rodape,
   TabelaDeItens,
   Text,
-  View,
   estilos,
   type DadosEmpresa,
 } from './componentes'
@@ -153,16 +151,6 @@ function Orcamento({
           diagnóstico. Qualquer alteração é comunicada antes da execução. Validade de{' '}
           {validadeDias} dias a contar da emissão.
         </Condicoes>
-
-        <View style={{ marginTop: 12 }}>
-          <Text style={estilos.titulo}>DE ACORDO — ASSINATURA E DATA</Text>
-        </View>
-
-        <Assinaturas
-          cliente={os.cliente.nome}
-          documento={os.cliente.documento ?? null}
-          empresaNome={empresa.empresaNome}
-        />
 
         <Rodape empresa={empresa} />
       </Page>

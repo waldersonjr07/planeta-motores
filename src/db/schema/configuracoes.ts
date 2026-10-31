@@ -1,10 +1,10 @@
-import { integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
  * Tabela de linha única: `id` é sempre 1. O módulo de configurações é o único
  * a escrever aqui e garante essa invariante.
  */
-export const configuracoes = pgTable('configuracoes', {
+export const configuracoes = sqliteTable('configuracoes', {
   id: integer('id').primaryKey(),
   empresaNome: text('empresa_nome').notNull().default('Planeta Motores'),
   empresaCnpj: text('empresa_cnpj'),
@@ -27,5 +27,5 @@ export const configuracoes = pgTable('configuracoes', {
     .default(
       'Olá {{cliente}}, consta em aberto o valor de {{saldo}} referente à OS {{numero}}. Podemos combinar o pagamento?',
     ),
-  atualizadoEm: timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoEm: integer('atualizado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })

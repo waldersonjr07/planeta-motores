@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { clientes, equipamentos } from '@/db/schema'
 import { falha, sucesso, type Resultado } from '@/lib/resultado'
@@ -8,24 +8,14 @@ import type { EntradaCliente, EntradaClienteRapido } from './esquemas'
 const DOCUMENTO_DUPLICADO = 'Já existe cliente cadastrado com esse CPF/CNPJ.'
 
 /**
- * Data vinda do relógio do banco, não do Node. `criadoEm` já usa `defaultNow()`;
- * se a atualização usasse `new Date()`, os dois relógios poderiam divergir por
- * alguns milissegundos e a data de atualização sairia anterior à de criação.
- */
-const AGORA = sql`now()`
-
-/**
- * Reconhece a violação do índice único de documento. O Drizzle embrulha o erro
- * do Postgres, então o código e o nome da restrição só aparecem descendo a
- * cadeia de `cause` — casar por texto da mensagem não funciona.
+ * Reconhece a violação do índice único de documento no SQLite.
  */
 function eDocumentoDuplicado(erro: unknown): boolean {
-  const VIOLACAO_DE_UNICIDADE = '23505'
   for (let atual: unknown = erro; atual; atual = (atual as { cause?: unknown }).cause) {
-    const candidato = atual as { code?: string; constraint_name?: string }
+    const candidato = atual as { code?: string; message?: string }
     if (
-      candidato.code === VIOLACAO_DE_UNICIDADE &&
-      candidato.constraint_name === 'clientes_documento_unico'
+      candidato.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+      candidato.message?.includes('clientes.documento')
     ) {
       return true
     }
@@ -81,7 +71,7 @@ export async function atualizarCliente(
   try {
     const alterados = await db
       .update(clientes)
-      .set({ ...entrada, atualizadoEm: AGORA })
+      .set({ ...entrada, atualizadoEm: new Date() })
       .where(eq(clientes.id, id))
       .returning({ id: clientes.id })
 
@@ -99,7 +89,7 @@ export async function definirAtivoCliente(
 ): Promise<Resultado<null>> {
   const alterados = await db
     .update(clientes)
-    .set({ ativo, atualizadoEm: AGORA })
+    .set({ ativo, atualizadoEm: new Date() })
     .where(eq(clientes.id, id))
     .returning({ id: clientes.id })
 

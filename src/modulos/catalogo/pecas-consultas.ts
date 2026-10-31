@@ -3,10 +3,11 @@ import { db } from '@/db'
 import { pecas } from '@/db/schema'
 
 export async function listarPecas(incluirInativas = false) {
-  if (incluirInativas) {
-    return db.select().from(pecas).orderBy(asc(pecas.nome))
-  }
-  return db.select().from(pecas).where(eq(pecas.ativo, true)).orderBy(asc(pecas.nome))
+  const lista = incluirInativas
+    ? await db.select().from(pecas)
+    : await db.select().from(pecas).where(eq(pecas.ativo, true))
+
+  return lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
 }
 
 export async function obterPeca(id: string) {

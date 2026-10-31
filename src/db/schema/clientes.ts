@@ -1,31 +1,35 @@
+import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
-  pgEnum,
-  pgTable,
+  integer,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/sqlite-core'
 
-export const tipoPessoa = pgEnum('tipo_pessoa', ['fisica', 'juridica'])
+export const tipoPessoaValores = ['fisica', 'juridica'] as const
+export const tipoPessoa = (col = 'tipo_pessoa') => text(col, { enum: tipoPessoaValores })
 
-export const tipoMotor = pgEnum('tipo_motor', ['2T', '4T'])
+export const tipoMotorValores = ['2T', '4T'] as const
+export const tipoMotor = (col = 'tipo_motor') => text(col, { enum: tipoMotorValores })
 
-export const aplicacaoEquipamento = pgEnum('aplicacao_equipamento', [
+export const aplicacaoEquipamentoValores = [
   'rocadeira',
   'motosserra',
   'motobomba',
   'gerador',
   'soprador',
   'outro',
-])
+] as const
+export const aplicacaoEquipamento = (col = 'aplicacao') =>
+  text(col, { enum: aplicacaoEquipamentoValores })
 
-export const clientes = pgTable(
+export const clientes = sqliteTable(
   'clientes',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
     nome: text('nome').notNull(),
     tipoPessoa: tipoPessoa('tipo_pessoa').notNull().default('fisica'),
     documento: text('documento'),
@@ -39,9 +43,9 @@ export const clientes = pgTable(
     uf: text('uf'),
     cep: text('cep'),
     observacoes: text('observacoes'),
-    ativo: boolean('ativo').notNull().default(true),
-    criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
-    atualizadoEm: timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
+    ativo: integer('ativo', { mode: 'boolean' }).notNull().default(true),
+    criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
+    atualizadoEm: integer('atualizado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
   },
   (tabela) => [
     // Parcial: documento nulo não colide com documento nulo.
@@ -51,9 +55,11 @@ export const clientes = pgTable(
   ],
 )
 
-export const equipamentos = pgTable('equipamentos', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  clienteId: uuid('cliente_id')
+export const equipamentos = sqliteTable('equipamentos', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  clienteId: text('cliente_id')
     .notNull()
     .references(() => clientes.id, { onDelete: 'cascade' }),
   tipoMotor: tipoMotor('tipo_motor').notNull(),
@@ -64,6 +70,6 @@ export const equipamentos = pgTable('equipamentos', {
   modelo: text('modelo'),
   numeroSerie: text('numero_serie'),
   observacoes: text('observacoes'),
-  ativo: boolean('ativo').notNull().default(true),
-  criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  ativo: integer('ativo', { mode: 'boolean' }).notNull().default(true),
+  criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })

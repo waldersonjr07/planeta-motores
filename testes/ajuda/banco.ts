@@ -1,19 +1,28 @@
-import { sql } from 'drizzle-orm'
 import { db } from '../../src/db'
 
 /**
  * Esvazia todas as tabelas de domínio preservando o esquema. Descobre a lista
- * no catálogo do Postgres para que tabela nova entre sozinha, sem manutenção
+ * no catálogo do SQLite para que tabela nova entre sozinha, sem manutenção
  * desta função.
  */
 export async function limparBanco(): Promise<void> {
-  const linhas = await db.execute<{ nome: string }>(sql`
-    select tablename as nome
-    from pg_tables
-    where schemaname = 'public'
-      and tablename <> '__drizzle_migrations'
-  `)
-  if (linhas.length === 0) return
-  const lista = linhas.map((l) => `"${l.nome}"`).join(', ')
-  await db.execute(sql.raw(`truncate table ${lista} restart identity cascade`))
+  const cliente = (db as any).$client
+  const tabelas = cliente
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name <> '__drizzle_migrations'",
+    )
+    .all() as { name: string }[]
+
+  if (tabelas.length === 0) return
+
+  cliente.pragma('foreign_keys = OFF')
+  for (const t of tabelas) {
+    cliente.prepare(`DELETE FROM "${t.name}"`).run()
+  }
+  try {
+    cliente.prepare('DELETE FROM sqlite_sequence').run()
+  } catch {
+    // sqlite_sequence não existe se nenhuma tabela usar autoincrement
+  }
+  cliente.pragma('foreign_keys = ON')
 }

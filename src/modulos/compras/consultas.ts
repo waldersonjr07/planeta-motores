@@ -34,7 +34,7 @@ export async function listarCompras(
       numeroDocumento: compras.numeroDocumento,
       total: SOMA_ITENS,
       quantidadeItens: sql<number>`(
-        select count(*)::int from ${compraItens}
+        select count(*) from ${compraItens}
         where ${compraItens.compraId} = ${compras.id}
       )`,
     })

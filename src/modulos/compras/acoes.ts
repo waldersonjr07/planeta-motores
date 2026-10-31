@@ -103,5 +103,8 @@ export async function acaoRegistrarCompra(
 
   revalidatePath('/compras')
   revalidatePath('/estoque')
+  revalidatePath('/financeiro')
+  revalidatePath('/painel')
+  if (osId) revalidatePath(`/ordens-servico/${osId}`)
   redirect('/compras')
 }

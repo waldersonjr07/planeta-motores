@@ -28,6 +28,7 @@ export async function acaoCriarCliente(
   if (!r.ok) return r
 
   revalidatePath('/clientes')
+  revalidatePath('/ordens-servico/nova')
   redirect(`/clientes/${r.dados.id}`)
 }
 
@@ -71,6 +72,7 @@ export async function acaoCriarEquipamento(
   if (!r.ok) return r
 
   revalidatePath(`/clientes/${analise.data.clienteId}`)
+  revalidatePath('/ordens-servico/nova')
   return r
 }
 

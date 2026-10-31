@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, asc, eq, like, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { clientes, equipamentos } from '@/db/schema'
 import { apenasDigitos } from '@/lib/validacao'
@@ -21,10 +21,10 @@ export async function listarClientes(
   const busca = filtro.busca?.trim()
   if (busca) {
     const digitos = apenasDigitos(busca)
-    const porNome = ilike(clientes.nome, `%${busca}%`)
+    const porNome = like(clientes.nome, `%${busca}%`)
     // Compara documento por dígitos: o usuário digita com pontuação, o banco guarda sem.
     condicoes.push(
-      digitos ? or(porNome, ilike(clientes.documento, `%${digitos}%`))! : porNome,
+      digitos ? or(porNome, like(clientes.documento, `%${digitos}%`))! : porNome,
     )
   }
 
@@ -35,7 +35,7 @@ export async function listarClientes(
       telefone: clientes.telefone,
       cidade: clientes.cidade,
       ativo: clientes.ativo,
-      quantidadeEquipamentos: sql<number>`count(${equipamentos.id})::int`,
+      quantidadeEquipamentos: sql<number>`count(${equipamentos.id})`,
     })
     .from(clientes)
     .leftJoin(equipamentos, eq(equipamentos.clienteId, clientes.id))

@@ -1,1 +1,0 @@
-ALTER TABLE "equipamentos" ADD COLUMN "aplicacao_outra" text;

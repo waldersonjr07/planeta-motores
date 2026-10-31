@@ -1,19 +1,16 @@
+import { randomUUID } from 'node:crypto'
 import {
   integer,
-  jsonb,
   numeric,
-  pgEnum,
-  pgTable,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/sqlite-core'
 import { pecas, servicos } from './catalogo'
 import { clientes, equipamentos } from './clientes'
 import { usuarios } from './usuarios'
 
-export const situacaoOs = pgEnum('situacao_os', [
+export const situacaoOsValores = [
   'recebido',
   'em_diagnostico',
   'orcamento_enviado',
@@ -25,19 +22,24 @@ export const situacaoOs = pgEnum('situacao_os', [
   'recusado',
   'devolvido',
   'cancelado',
-])
+] as const
+export const situacaoOs = (col = 'situacao') => text(col, { enum: situacaoOsValores })
 
-export const tipoItemOs = pgEnum('tipo_item_os', ['peca', 'servico'])
+export const tipoItemOsValores = ['peca', 'servico'] as const
+export const tipoItemOs = (col = 'tipo') => text(col, { enum: tipoItemOsValores })
 
-export const momentoFoto = pgEnum('momento_foto', ['chegada', 'dano', 'conclusao'])
+export const momentoFotoValores = ['chegada', 'dano', 'conclusao'] as const
+export const momentoFoto = (col = 'momento') => text(col, { enum: momentoFotoValores })
 
-export const ordensServico = pgTable('ordens_servico', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const ordensServico = sqliteTable('ordens_servico', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
   numero: text('numero').notNull().unique(),
-  clienteId: uuid('cliente_id')
+  clienteId: text('cliente_id')
     .notNull()
     .references(() => clientes.id, { onDelete: 'restrict' }),
-  equipamentoId: uuid('equipamento_id')
+  equipamentoId: text('equipamento_id')
     .notNull()
     .references(() => equipamentos.id, { onDelete: 'restrict' }),
   situacao: situacaoOs('situacao').notNull().default('recebido'),
@@ -49,37 +51,41 @@ export const ordensServico = pgTable('ordens_servico', {
   descontoCentavos: integer('desconto_centavos').notNull().default(0),
   notaFiscalReferencia: text('nota_fiscal_referencia'),
   observacoes: text('observacoes'),
-  recebidoEm: timestamp('recebido_em', { withTimezone: true }).notNull().defaultNow(),
-  diagnosticadoEm: timestamp('diagnosticado_em', { withTimezone: true }),
-  orcadoEm: timestamp('orcado_em', { withTimezone: true }),
-  aprovadoEm: timestamp('aprovado_em', { withTimezone: true }),
-  recusadoEm: timestamp('recusado_em', { withTimezone: true }),
+  recebidoEm: integer('recebido_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
+  diagnosticadoEm: integer('diagnosticado_em', { mode: 'timestamp_ms' }),
+  orcadoEm: integer('orcado_em', { mode: 'timestamp_ms' }),
+  aprovadoEm: integer('aprovado_em', { mode: 'timestamp_ms' }),
+  recusadoEm: integer('recusado_em', { mode: 'timestamp_ms' }),
   motivoRecusa: text('motivo_recusa'),
-  concluidoEm: timestamp('concluido_em', { withTimezone: true }),
-  entregueEm: timestamp('entregue_em', { withTimezone: true }),
-  canceladoEm: timestamp('cancelado_em', { withTimezone: true }),
+  concluidoEm: integer('concluido_em', { mode: 'timestamp_ms' }),
+  entregueEm: integer('entregue_em', { mode: 'timestamp_ms' }),
+  canceladoEm: integer('cancelado_em', { mode: 'timestamp_ms' }),
   motivoCancelamento: text('motivo_cancelamento'),
-  criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })
 
-export const osItens = pgTable('os_itens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  osId: uuid('os_id')
+export const osItens = sqliteTable('os_itens', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  osId: text('os_id')
     .notNull()
     .references(() => ordensServico.id, { onDelete: 'cascade' }),
   tipo: tipoItemOs('tipo').notNull(),
-  pecaId: uuid('peca_id').references(() => pecas.id, { onDelete: 'restrict' }),
-  servicoId: uuid('servico_id').references(() => servicos.id, { onDelete: 'restrict' }),
+  pecaId: text('peca_id').references(() => pecas.id, { onDelete: 'restrict' }),
+  servicoId: text('servico_id').references(() => servicos.id, { onDelete: 'restrict' }),
   /** Nome copiado no lançamento: renomear no catálogo não altera orçamento antigo. */
   descricao: text('descricao').notNull(),
-  quantidade: numeric('quantidade', { precision: 12, scale: 3 }).notNull(),
+  quantidade: numeric('quantidade').notNull(),
   precoUnitarioCentavos: integer('preco_unitario_centavos').notNull(),
-  criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })
 
-export const osFotos = pgTable('os_fotos', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  osId: uuid('os_id')
+export const osFotos = sqliteTable('os_fotos', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  osId: text('os_id')
     .notNull()
     .references(() => ordensServico.id, { onDelete: 'cascade' }),
   momento: momentoFoto('momento').notNull().default('chegada'),
@@ -87,39 +93,43 @@ export const osFotos = pgTable('os_fotos', {
   nomeOriginal: text('nome_original'),
   tamanhoBytes: integer('tamanho_bytes'),
   legenda: text('legenda'),
-  criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })
 
-export const osHistorico = pgTable('os_historico', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  osId: uuid('os_id')
+export const osHistorico = sqliteTable('os_historico', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  osId: text('os_id')
     .notNull()
     .references(() => ordensServico.id, { onDelete: 'cascade' }),
   situacaoAnterior: situacaoOs('situacao_anterior'),
   situacaoNova: situacaoOs('situacao_nova').notNull(),
   observacao: text('observacao'),
-  usuarioId: uuid('usuario_id').references(() => usuarios.id, { onDelete: 'set null' }),
-  criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  usuarioId: text('usuario_id').references(() => usuarios.id, { onDelete: 'set null' }),
+  criadoEm: integer('criado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
 })
 
-export const osOrcamentoVersoes = pgTable(
+export const osOrcamentoVersoes = sqliteTable(
   'os_orcamento_versoes',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    osId: uuid('os_id')
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    osId: text('os_id')
       .notNull()
       .references(() => ordensServico.id, { onDelete: 'cascade' }),
     versao: integer('versao').notNull(),
     totalCentavos: integer('total_centavos').notNull(),
     /** Cópia dos itens no momento do envio, para reproduzir o que o cliente viu. */
-    itens: jsonb('itens').notNull(),
-    enviadoEm: timestamp('enviado_em', { withTimezone: true }).notNull().defaultNow(),
+    itens: text('itens', { mode: 'json' }).notNull(),
+    enviadoEm: integer('enviado_em', { mode: 'timestamp_ms' }).notNull().defaultNow(),
   },
   (tabela) => [uniqueIndex('os_orcamento_versao_unica').on(tabela.osId, tabela.versao)],
 )
 
 /** Contador por ano, incrementado atomicamente na transação que cria a OS. */
-export const osNumeracao = pgTable('os_numeracao', {
+export const osNumeracao = sqliteTable('os_numeracao', {
   ano: integer('ano').primaryKey(),
   ultimoNumero: integer('ultimo_numero').notNull().default(0),
 })

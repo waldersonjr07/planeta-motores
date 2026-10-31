@@ -23,7 +23,7 @@ import { condicaoDeCobranca, saldoDevedor, type CondicaoCobranca } from './cobra
  * `"id"` passa a resolver para a tabela de dentro — a correlação nunca casa e
  * o total volta zerado, silenciosamente.
  */
-const TOTAL_DA_OS = sql<string>`greatest(0, coalesce((
+const TOTAL_DA_OS = sql<string>`max(0, coalesce((
   select sum(i.quantidade * i.preco_unitario_centavos)
   from os_itens i where i.os_id = ordens_servico.id
 ), 0) - ordens_servico.desconto_centavos)`
@@ -193,12 +193,13 @@ export async function resultadoDoPeriodo(
     .from(pagamentos)
     .where(and(gte(pagamentos.data, de), lte(pagamentos.data, ate)))
 
-  const [compras] = await db.execute<{ soma: string }>(sql`
-    select coalesce(sum(ci.quantidade * ci.custo_unitario_centavos), 0) as soma
-    from compra_itens ci
-    join compras c on c.id = ci.compra_id
-    where c.data >= ${de} and c.data <= ${ate}
-  `)
+  const [totalCompras] = await db
+    .select({
+      soma: sql<string>`coalesce(sum(${compraItens.quantidade} * ${compraItens.custoUnitarioCentavos}), 0)`,
+    })
+    .from(compraItens)
+    .innerJoin(compras, eq(compras.id, compraItens.compraId))
+    .where(and(gte(compras.data, de), lte(compras.data, ate)))
 
   const [gastos] = await db
     .select({ soma: sql<string>`coalesce(sum(${despesas.valorCentavos}), 0)` })
@@ -206,7 +207,7 @@ export async function resultadoDoPeriodo(
     .where(and(gte(despesas.data, de), lte(despesas.data, ate)))
 
   const entradasCentavos = Math.round(Number(entradas?.soma ?? 0))
-  const comprasCentavos = Math.round(Number(compras?.soma ?? 0))
+  const comprasCentavos = Math.round(Number(totalCompras?.soma ?? 0))
   const despesasCentavos = Math.round(Number(gastos?.soma ?? 0))
   const saidasCentavos = comprasCentavos + despesasCentavos
 

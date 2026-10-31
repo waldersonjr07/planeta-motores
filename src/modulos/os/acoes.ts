@@ -29,7 +29,9 @@ function objeto(formulario: FormData): Record<string, string> {
 
 function revalidarOs(osId: string) {
   revalidatePath('/ordens-servico')
-  revalidatePath(`/ordens-servico/${osId}`)
+  revalidatePath('/painel')
+  revalidatePath('/financeiro')
+  if (osId) revalidatePath(`/ordens-servico/${osId}`)
 }
 
 export async function acaoCriarOs(
@@ -52,6 +54,7 @@ export async function acaoCriarOs(
 
     revalidatePath('/ordens-servico')
     revalidatePath('/clientes')
+    revalidatePath('/painel')
     redirect(`/ordens-servico/${r.dados.id}`)
   }
 
@@ -69,6 +72,7 @@ export async function acaoCriarOs(
   if (!r.ok) return r
 
   revalidatePath('/ordens-servico')
+  revalidatePath('/painel')
   redirect(`/ordens-servico/${r.dados.id}`)
 }
 

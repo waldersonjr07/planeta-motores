@@ -38,15 +38,8 @@ export function DocumentosEAvisos({
         <span className="text-xs font-medium uppercase tracking-wide text-tinta-fraca">
           Documentos
         </span>
-        {/* Nomeados "PDF do …" para não se confundirem com as abas da ficha. */}
-        <a href={`/api/documentos/comprovante/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
-          PDF do comprovante
-        </a>
         <a href={`/api/documentos/orcamento/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
           PDF do orçamento
-        </a>
-        <a href={`/api/documentos/recibo/${osId}`} target="_blank" rel="noreferrer" className={LINK}>
-          PDF do recibo
         </a>
       </div>
 
@@ -55,7 +48,7 @@ export function DocumentosEAvisos({
           WhatsApp
         </span>
         {telefone ? (
-          avisos
+            avisos
             .filter((aviso) => aviso.ativo)
             .map((aviso) => (
               <a
@@ -70,7 +63,7 @@ export function DocumentosEAvisos({
             ))
         ) : (
           <span className="text-sm text-tinta-fraca">
-            Cliente sem telefone cadastrado — não dá para montar a mensagem.
+            Cliente sem telefone cadastrado: não é possível montar a mensagem.
           </span>
         )}
       </div>

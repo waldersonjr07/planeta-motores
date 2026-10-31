@@ -6,6 +6,7 @@ import { exigirUsuario } from '@/modulos/auth/guarda'
 import { AvisoDeBackup } from '@/modulos/backup/componentes'
 import { obterEstadoDoBackup } from '@/modulos/backup/consultas'
 import { precisaAvisar } from '@/modulos/backup/estado'
+import '../globals.css'
 import { Navegacao } from './navegacao'
 
 export default async function LayoutAplicacao({

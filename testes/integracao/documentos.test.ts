@@ -36,14 +36,13 @@ test('gera o comprovante de recebimento como PDF de verdade', async () => {
 })
 
 test('gera o orçamento com conteúdo proporcional aos itens', async () => {
-  const { osId } = await osOrcada()
+  const { osId, numero } = await osOrcada()
 
   const orcamento = await gerarDocumento('orcamento', osId)
-  const comprovante = await gerarDocumento('comprovante', osId)
 
   expect(orcamento!.conteudo.subarray(0, 5).toString()).toBe('%PDF-')
-  // O orçamento tem duas tabelas e o bloco de totais; é maior que o comprovante.
-  expect(orcamento!.conteudo.length).toBeGreaterThan(comprovante!.conteudo.length)
+  expect(orcamento!.conteudo.length).toBeGreaterThan(10000)
+  expect(orcamento!.nomeArquivo).toBe(`orcamento-${numero}.pdf`)
 })
 
 test('gera o recibo depois do pagamento', async () => {

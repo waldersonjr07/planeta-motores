@@ -25,12 +25,22 @@ const dataComHora = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
 })
 
-export function formatarData(valor: Date): string {
-  return somenteData.format(valor)
+export function formatarData(
+  valor: Date | number | string | null | undefined,
+): string {
+  if (valor === null || valor === undefined) return ''
+  const d = valor instanceof Date ? valor : new Date(typeof valor === 'number' ? valor : String(valor))
+  if (isNaN(d.getTime())) return ''
+  return somenteData.format(d)
 }
 
-export function formatarDataHora(valor: Date): string {
-  return dataComHora.format(valor).replace(', ', ' ')
+export function formatarDataHora(
+  valor: Date | number | string | null | undefined,
+): string {
+  if (valor === null || valor === undefined) return ''
+  const d = valor instanceof Date ? valor : new Date(typeof valor === 'number' ? valor : String(valor))
+  if (isNaN(d.getTime())) return ''
+  return dataComHora.format(d).replace(', ', ' ')
 }
 
 const partesIso = new Intl.DateTimeFormat('en-US', {
@@ -59,8 +69,9 @@ const partesIso = new Intl.DateTimeFormat('en-US', {
  * Grosso teve horário de verão até 2019 — no verão o estado ia para UTC-3 —, e
  * dado exportado de antes disso tem de levar o deslocamento que valia na data.
  */
-export function formatarDataHoraIso(valor: Date): string {
-  const partes = new Map(partesIso.formatToParts(valor).map((p) => [p.type, p.value]))
+export function formatarDataHoraIso(valor: Date | number | string): string {
+  const d = valor instanceof Date ? valor : new Date(typeof valor === 'number' ? valor : String(valor))
+  const partes = new Map(partesIso.formatToParts(d).map((p) => [p.type, p.value]))
   const data = `${partes.get('year')}-${partes.get('month')}-${partes.get('day')}`
   const hora = `${partes.get('hour')}:${partes.get('minute')}:${partes.get('second')}`
   // `longOffset` devolve "GMT-04:00"; no deslocamento zero devolve só "GMT".
@@ -69,8 +80,9 @@ export function formatarDataHoraIso(valor: Date): string {
 }
 
 /** Meia-noite do dia civil de Cáceres, expressa em milissegundos UTC. */
-function diaCivil(valor: Date): number {
-  const [dia, mes, ano] = somenteData.format(valor).split('/').map(Number)
+function diaCivil(valor: Date | number | string): number {
+  const d = valor instanceof Date ? valor : new Date(typeof valor === 'number' ? valor : String(valor))
+  const [dia, mes, ano] = somenteData.format(d).split('/').map(Number)
   return Date.UTC(ano, mes - 1, dia)
 }
 

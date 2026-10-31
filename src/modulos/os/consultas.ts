@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, like, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   clientes,
@@ -72,10 +72,10 @@ export async function listarOs(
     const alvo = `%${busca}%`
     condicoes.push(
       or(
-        ilike(ordensServico.numero, alvo),
-        ilike(clientes.nome, alvo),
-        ilike(equipamentos.marca, alvo),
-        ilike(equipamentos.modelo, alvo),
+        like(ordensServico.numero, alvo),
+        like(clientes.nome, alvo),
+        like(equipamentos.marca, alvo),
+        like(equipamentos.modelo, alvo),
       )!,
     )
   }
